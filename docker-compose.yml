@@ -1,0 +1,168 @@
+version: "3.3"
+services:
+  proxy:
+    image: traefik:v2.2
+    ports:
+      - 80:80
+      - 443:443
+    env_file:
+      - .env
+    networks:
+      - ${TRAEFIK_PUBLIC_NETWORK}
+      - default
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik-public-certificates:/certificates
+    command:
+      - --providers.docker
+      - --providers.docker.constraints=Label(`traefik.constraint-label`, `${TRAEFIK_PUBLIC_TAG}`)
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.swarmmode
+      - --entrypoints.http.address=:80
+      - --entrypoints.https.address=:443
+      - --certificatesresolvers.le.acme.email=${EMAIL}
+      - --certificatesresolvers.le.acme.storage=/certificates/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --accesslog
+      - --log
+      - --log.level=DEBUG
+      - --api
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.traefik-public.traefik-public-certificates == true
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
+        - traefik.constraint-label=${TRAEFIK_PUBLIC_TAG}
+        - traefik.http.middlewares.${STACK_NAME}-https-redirect.redirectscheme.scheme=https
+        - traefik.http.middlewares.${STACK_NAME}-https-redirect.redirectscheme.permanent=true
+        - traefik.http.middlewares.${STACK_NAME}-admin-auth.basicauth.users=${TRAEFIK_USERNAME}:${TRAEFIK_HASHED_PASSWORD}
+        - traefik.http.routers.${STACK_NAME}-proxy-http.rule=Host(`traefik.${DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-proxy-http.entrypoints=http
+        - traefik.http.routers.${STACK_NAME}-proxy-https.rule=Host(`traefik.${DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-proxy-https.entrypoints=https
+        - traefik.http.routers.${STACK_NAME}-proxy-https.tls=true
+        - traefik.http.routers.${STACK_NAME}-proxy-https.tls.certresolver=le
+        - traefik.http.services.${STACK_NAME}-proxy.loadbalancer.server.port=8080
+        - traefik.http.middlewares.${STACK_NAME}-www-redirect.redirectregex.regex=^https?://(www.)?(${DOMAIN})/(.*)
+        - traefik.http.middlewares.${STACK_NAME}-www-redirect.redirectregex.replacement=https://${DOMAIN}/$${3}
+        - traefik.http.routers.${STACK_NAME}-proxy-https.middlewares=${STACK_NAME}-www-redirect,${STACK_NAME}-admin-auth
+        - traefik.http.routers.${STACK_NAME}-proxy-http.middlewares=${STACK_NAME}-www-redirect,${STACK_NAME}-https-redirect,${STACK_NAME}-admin-auth
+        - traefik.http.routers.${STACK_NAME}-proxy-https.service=api@internal
+
+  db:
+    image: postgres:12
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    deploy:
+      placement:
+        constraints:
+          - node.labels.${STACK_NAME}.app-db-data == true
+
+  queue:
+    image: rabbitmq:3
+
+  flower:
+    image: mher/flower:0.9.7
+    networks:
+      - ${TRAEFIK_PUBLIC_NETWORK}
+      - default
+    env_file:
+      - .env
+    command:
+      - "--broker=amqp://guest@queue:5672//"
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
+        - traefik.constraint-label=${TRAEFIK_PUBLIC_TAG}
+        - traefik.http.routers.${STACK_NAME}-flower-http.rule=Host(`flower.${DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-flower-http.entrypoints=http
+        - traefik.http.routers.${STACK_NAME}-flower-http.middlewares=${STACK_NAME}-https-redirect
+        - traefik.http.routers.${STACK_NAME}-flower-https.rule=Host(`flower.${DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-flower-https.entrypoints=https
+        - traefik.http.routers.${STACK_NAME}-flower-https.tls=true
+        - traefik.http.routers.${STACK_NAME}-flower-https.tls.certresolver=le
+        - traefik.http.services.${STACK_NAME}-flower.loadbalancer.server.port=5555
+
+  backend:
+    image: "${DOCKER_IMAGE_BACKEND}:${TAG-latest}"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN}
+      - SERVER_HOST=https://${DOMAIN}
+      - SMTP_HOST=${SMTP_HOST}
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
+        - traefik.constraint-label=${TRAEFIK_PUBLIC_TAG}
+        - traefik.http.routers.${STACK_NAME}-backend-http.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`))
+        - traefik.http.routers.${STACK_NAME}-backend-http.entrypoints=http
+        - traefik.http.routers.${STACK_NAME}-backend-http.middlewares=${STACK_NAME}-https-redirect
+        - traefik.http.routers.${STACK_NAME}-backend-https.rule=Host(`${DOMAIN}`) && (PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`))
+        - traefik.http.routers.${STACK_NAME}-backend-https.entrypoints=https
+        - traefik.http.routers.${STACK_NAME}-backend-https.tls=true
+        - traefik.http.routers.${STACK_NAME}-backend-https.tls.certresolver=le
+        - traefik.http.services.${STACK_NAME}-backend.loadbalancer.server.port=80
+
+  celeryworker:
+    image: "${DOCKER_IMAGE_CELERYWORKER}:${TAG-latest}"
+    depends_on:
+      - db
+      - queue
+    env_file:
+      - .env
+    environment:
+      - SERVER_NAME=${DOMAIN}
+      - SERVER_HOST=https://${DOMAIN}
+      - SMTP_HOST=${SMTP_HOST}
+    build:
+      context: ./backend
+      dockerfile: celeryworker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-false}
+
+  frontend:
+    image: "${DOCKER_IMAGE_FRONTEND}:${TAG-latest}"
+    build:
+      context: ./frontend
+      args:
+        FRONTEND_ENV: ${FRONTEND_ENV-production}
+    env_file:
+      - .env
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
+        - traefik.constraint-label=${TRAEFIK_PUBLIC_TAG}
+        - traefik.http.routers.${STACK_NAME}-frontend-http.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-frontend-http.entrypoints=http
+        - traefik.http.routers.${STACK_NAME}-frontend-http.middlewares=${STACK_NAME}-https-redirect
+        - traefik.http.routers.${STACK_NAME}-frontend-https.rule=Host(`${DOMAIN}`)
+        - traefik.http.routers.${STACK_NAME}-frontend-https.entrypoints=https
+        - traefik.http.routers.${STACK_NAME}-frontend-https.tls=true
+        - traefik.http.routers.${STACK_NAME}-frontend-https.tls.certresolver=le
+        - traefik.http.services.${STACK_NAME}-frontend.loadbalancer.server.port=80
+
+volumes:
+  app-db-data:
+  traefik-public-certificates:
+
+networks:
+  traefik-public:
+    external: true

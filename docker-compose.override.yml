@@ -1,0 +1,80 @@
+version: "3.3"
+services:
+  proxy:
+    ports:
+      - "80:80"
+      - "8090:8080"
+    command:
+      - --providers.docker
+      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG}`)
+      - --providers.docker.exposedbydefault=false
+      - --accesslog
+      - --log
+      - --api
+      - --api.insecure=true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${STACK_NAME}-traefik-public-http.rule=Host(`${DOMAIN}`)
+      - traefik.http.services.${STACK_NAME}-traefik-public.loadbalancer.server.port=80
+
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  flower:
+    ports:
+      - "5555:5555"
+
+  backend:
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./backend/app:/app
+    environment:
+      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
+      - SERVER_HOST=http://${DOMAIN}
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+        INSTALL_JUPYTER: ${INSTALL_JUPYTER-true}
+    #command: bash -c "while true; do sleep 1; done"  # Infinite loop to keep container live doing nothing
+    command: /start-reload.sh
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG}
+      - traefik.http.routers.${STACK_NAME}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)
+      - traefik.http.services.${STACK_NAME}-backend.loadbalancer.server.port=80
+
+  celeryworker:
+    volumes:
+      - ./backend/app:/app
+    environment:
+      - RUN=celery worker -A app.worker -l info -Q main-queue -c 1
+      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888
+      - SERVER_HOST=http://${DOMAIN}
+    build:
+      context: ./backend
+      dockerfile: celeryworker.dockerfile
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
+        INSTALL_JUPYTER: ${INSTALL_JUPYTER-true}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: development.Dockerfile
+      args:
+        FRONTEND_ENV: dev
+    volumes:
+      - ./frontend/src/:/app/src/
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG}
+      - traefik.http.routers.${STACK_NAME}-frontend-http.rule=PathPrefix(`/`)
+      - traefik.http.services.${STACK_NAME}-frontend.loadbalancer.server.port=80
+
+networks:
+  traefik-public:
+    external: false

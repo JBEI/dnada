@@ -1,0 +1,15 @@
+Parameter Name,Value,Default Value,Description
+MAXDELTATEMPERATUREADJACENTZONES,5,5,The maximum difference in temperature (in C) between adjacent zones on the thermocycler block
+MAXDELTATEMPERATUREREACTIONOPTIMUMZONEACCEPTABLE,5,5,"The maximum acceptable difference in temperature (in C) between the optimal annealing temperature of a PCR reaction, and the annealing temperature of the thermocycler block zone it is sitting in"
+MAXMCSTEPSPERZONE,{MONTE_CARLO_STEPS},1000,The maximum number of Monte-Carlo steps attempted per thermocycler block zone
+MAXWELLVOLUMEMULTIWELLPLATE,{MAX_WELL_VOLUME},100,The maximum liquid volume (in uL) that a well in the multi-well plate can hold
+MCTEMPERATUREFINAL,0.0001,0.0001,The final temperature at the end of the Monte-Carlo simulated annealing run (in arbitrary reduced units)
+MCTEMPERATUREINITIAL,0.1,0.1,The initial temperature in the beginning of the Monte-Carlo simulated annealing run (in arbitrary reduced units)
+MINPIPETTINGVOLUME,{MIN_PIPETTING_VOLUME},5,The minimum pipetting volume (e.g. for a robotics platform) (in uL)
+NCOLUMNSMULTIWELLPLATE,{NUM_SOURCE_COLUMNS},12,The number of columns in the multi-well plate
+NROWSMULTIWELLPLATE,{NUM_SOURCE_ROWS},8,The number of rows in the multi-well plate
+TRIALDELTATEMPERATURE,0.1,0.1,The Monte-Carlo step trial change in temperature for a thermocycler block zone
+WELLSPERTHERMOCYCLERZONE,16,16,The number of wells per thermocycler block zone
+ZONESPERTHERMOCYCLERBLOCK,6,6,The number of zones per thermocycler block
+THERMOCYCLERTYPE,VERITI,VERITI,The type of thermocyle instrument
+ASSEMBLYREACTIONSPERPCRREACTION,{MAX_WELL_USES},5,The number of times a well can be used in different assemblies
