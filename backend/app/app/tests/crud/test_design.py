@@ -48,9 +48,7 @@ def test_update_design(db: Session) -> None:
     design = create_random_design(db)
     description2 = random_lower_string()
     design_update = schemas.DesignUpdate(description=description2)
-    design2 = crud.design.update(
-        db=db, db_obj=design, obj_in=design_update
-    )
+    design2 = crud.design.update(db=db, db_obj=design, obj_in=design_update)
     assert design.id == design2.id
     assert design.name == design2.name
     assert design2.description == description2

@@ -5,8 +5,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api.utils.db import process_design_to_db, process_workflow_to_db
-from app.tests.testdata.testdata import (EXTRACTED_MASTER_J5_PATH,
-                                         RESULTS_DICT_PATH)
+from app.tests.testdata.testdata import EXTRACTED_MASTER_J5_PATH, RESULTS_DICT_PATH
 from app.tests.utils.design import create_random_design
 from app.tests.utils.experiment import create_random_experiment
 from app.tests.utils.resultzip import create_random_resultzip

@@ -78,14 +78,12 @@ def gather_constructs_for_db(
     constructs = pd.DataFrame({"filename": filenames, "genbank": genbanks})
     constructs["name"] = constructs["filename"].str.strip(".gb")
     constructs["j5_construct_id"] = constructs["name"].apply(
-        lambda name: assemblys.loc[
-            assemblys["Name"] == name, "Number"
-        ].values[0]
+        lambda name: assemblys.loc[assemblys["Name"] == name, "Number"].values[0]
     )
     constructs["assembly_method"] = constructs["name"].apply(
-        lambda name: assemblys.loc[
-            assemblys["Name"] == name, "Assembly Method"
-        ].values[0]
+        lambda name: assemblys.loc[assemblys["Name"] == name, "Assembly Method"].values[
+            0
+        ]
     )
     return constructs.to_json()
 
@@ -269,16 +267,12 @@ def process_workflow_to_db(
             plate_type=plate_csv["plate_type"],
             raw_data=plate_csv["raw_data"],
         )
-        plate_mapping: Dict[str, int] = {
-            str(plate.name): plate.id for plate in plates
-        }
+        plate_mapping: Dict[str, int] = {str(plate.name): plate.id for plate in plates}
         create_wells(
             db=db,
             owner_id=owner_id,
             workflow_id=workflow_id,
-            raw_json=pd.read_csv(
-                io.StringIO(plate_csv["raw_data"])
-            ).to_json(),
+            raw_json=pd.read_csv(io.StringIO(plate_csv["raw_data"])).to_json(),
             db_model=model_map[plate_csv["plate_type"]]["db"],
             crud_model=model_map[plate_csv["plate_type"]]["crud"],
             plate_mapping=plate_mapping,
@@ -312,9 +306,7 @@ def update_pcr_worksheet(
     pcr_worksheet = pd.read_csv(io.StringIO(worksheet))
     pcr_worksheet["owner_id"] = owner_id
     pcr_worksheet["workflow_id"] = workflow_id
-    pcr_worksheet["design_id"] = crud.workflow.get(
-        db=db, id=workflow_id
-    ).design_id
+    pcr_worksheet["design_id"] = crud.workflow.get(db=db, id=workflow_id).design_id
     pcr_worksheet["pcr_id"] = pcr_worksheet["REACTION_NUMBER"].apply(
         lambda rxn_number: db.query(models.PCR.id)
         .join(models.Part)
@@ -334,9 +326,7 @@ def update_pcr_worksheet(
         .filter(models.Template.name == name)
         .one()[0]
     )
-    pcr_worksheet["template_plate_id"] = pcr_worksheet[
-        "TEMPLATE_PLATE"
-    ].apply(
+    pcr_worksheet["template_plate_id"] = pcr_worksheet["TEMPLATE_PLATE"].apply(
         lambda name: db.query(models.Plate.id)
         .join(models.Workflow)
         .filter(models.Workflow.owner_id == owner_id)
@@ -353,8 +343,7 @@ def update_pcr_worksheet(
         .filter(models.Workflow.id == workflow_id)
         .filter(models.TemplateWell.plate_id == row["template_plate_id"])
         .filter(
-            models.TemplateWell.location
-            == convert3WellTo2Well(row["TEMPLATE_WELL"])
+            models.TemplateWell.location == convert3WellTo2Well(row["TEMPLATE_WELL"])
         )
         .one()[0],
         axis=1,
@@ -377,9 +366,7 @@ def update_pcr_worksheet(
         .filter(models.Oligo.name == name)
         .one()[0]
     )
-    pcr_worksheet["oligo1_plate_id"] = pcr_worksheet[
-        "PRIMER1_PLATE"
-    ].apply(
+    pcr_worksheet["oligo1_plate_id"] = pcr_worksheet["PRIMER1_PLATE"].apply(
         lambda name: db.query(models.Plate.id)
         .join(models.Workflow)
         .filter(models.Workflow.owner_id == owner_id)
@@ -388,9 +375,7 @@ def update_pcr_worksheet(
         .filter(models.Plate.name == name)
         .one()[0]
     )
-    pcr_worksheet["oligo2_plate_id"] = pcr_worksheet[
-        "PRIMER2_PLATE"
-    ].apply(
+    pcr_worksheet["oligo2_plate_id"] = pcr_worksheet["PRIMER2_PLATE"].apply(
         lambda name: db.query(models.Plate.id)
         .join(models.Workflow)
         .filter(models.Workflow.owner_id == owner_id)
@@ -406,10 +391,7 @@ def update_pcr_worksheet(
         .filter(models.Workflow.owner_id == owner_id)
         .filter(models.Workflow.id == workflow_id)
         .filter(models.OligoWell.plate_id == row["oligo1_plate_id"])
-        .filter(
-            models.OligoWell.location
-            == convert3WellTo2Well(row["PRIMER1_WELL"])
-        )
+        .filter(models.OligoWell.location == convert3WellTo2Well(row["PRIMER1_WELL"]))
         .one()[0],
         axis=1,
     )
@@ -420,10 +402,7 @@ def update_pcr_worksheet(
         .filter(models.Workflow.owner_id == owner_id)
         .filter(models.Workflow.id == workflow_id)
         .filter(models.OligoWell.plate_id == row["oligo2_plate_id"])
-        .filter(
-            models.OligoWell.location
-            == convert3WellTo2Well(row["PRIMER2_WELL"])
-        )
+        .filter(models.OligoWell.location == convert3WellTo2Well(row["PRIMER2_WELL"]))
         .one()[0],
         axis=1,
     )
@@ -654,9 +633,7 @@ def add_consolidate_pcr_instructions_to_db(
 
     instruct_zip.seek(0)
     with zipfile.ZipFile(instruct_zip, mode="r") as F:
-        biomek_instructions: str = F.read(
-            "biomek_instructions.csv"
-        ).decode("utf-8")
+        biomek_instructions: str = F.read("biomek_instructions.csv").decode("utf-8")
         consolidated_pcr_worksheet: str = F.read(
             "consolidated_pcr_worksheet.csv"
         ).decode("utf-8")
@@ -738,18 +715,14 @@ def add_pcr_redo_instructions_to_db(
     )
     plates: list = create_plates(
         db=db,
-        plate_names=list(
-            redo_pcr_df[settings["pcrRedoPlateColumn"]].unique()
-        ),
+        plate_names=list(redo_pcr_df[settings["pcrRedoPlateColumn"]].unique()),
         owner_id=owner_id,
         workflow_id=workflow_id,
         size=96,
         plate_type="pcr",
         raw_data=pcr_redo_instructions["worksheet"],
     )
-    plate_mapping: Dict[str, int] = {
-        str(plate.name): plate.id for plate in plates
-    }
+    plate_mapping: Dict[str, int] = {str(plate.name): plate.id for plate in plates}
     create_wells(
         db=db,
         owner_id=owner_id,

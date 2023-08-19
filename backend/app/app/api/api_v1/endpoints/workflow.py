@@ -12,14 +12,11 @@ from app.api import deps
 from app.api.utils.db import (add_assembly_instructions_to_db,
                               add_consolidate_pcr_instructions_to_db,
                               add_pcr_redo_instructions_to_db,
-                              add_plating_instructions_to_db,
-                              process_design_to_db, process_workflow_to_db)
+                              add_plating_instructions_to_db)
 from app.api.utils.post_automation import (consolidate_pcr_trials_main,
-                                           create_equivolume_assembly,
-                                           create_pcr_redo,
+                                           create_equivolume_assembly, create_pcr_redo,
                                            read_construct_dataframe)
-from app.api.utils.time import timestamp
-from app.core.j5_to_echo import create_plating_instructions, j5_to_echo
+from app.core.j5_to_echo import create_plating_instructions
 
 router = APIRouter()
 
@@ -189,15 +186,11 @@ def read_workflow(
     """
     workflow = crud.workflow.get(db=db, id=id)
     if not workflow:
-        raise HTTPException(
-            status_code=404, detail="Automation Result not found"
-        )
+        raise HTTPException(status_code=404, detail="Automation Result not found")
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return workflow
 
 
@@ -212,9 +205,7 @@ def find_workflows(
     """
     Find workflows.
     """
-    workflows = crud.workflow.find(
-        db=db, design_id=design_id, obj_in=search_obj
-    )
+    workflows = crud.workflow.find(db=db, design_id=design_id, obj_in=search_obj)
     return workflows
 
 
@@ -233,15 +224,11 @@ def read_workflow_instructions(
     """
     workflow = crud.workflow.get(db=db, id=id)
     if not workflow:
-        raise HTTPException(
-            status_code=404, detail="Instruction not found"
-        )
+        raise HTTPException(status_code=404, detail="Instruction not found")
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return workflow.instructions
 
 
@@ -262,12 +249,8 @@ def update_workflow(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
-    workflow = crud.workflow.update(
-        db=db, db_obj=workflow, obj_in=workflow_in
-    )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    workflow = crud.workflow.update(db=db, db_obj=workflow, obj_in=workflow_in)
     return workflow
 
 
@@ -287,9 +270,7 @@ def delete_workflow(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     workflow = crud.workflow.remove(db=db, id=id)
     return workflow
 
@@ -310,9 +291,7 @@ def download_workflow_zip(
     if not crud.user.is_superuser(current_user) and (
         result_zip.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return StreamingResponse(
         io.BytesIO(base64.b64decode(result_zip.data.encode("utf-8"))),
         media_type="application/zip",
@@ -342,9 +321,7 @@ def create_redopcr_workflow(
     if not crud.user.is_superuser(current_user) and (
         pcrrun.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     workflow_id: int = pcrrun.instruction.workflow_id
     redo_trial: int = pcrrun.instruction.trial + 1
     redo_worksheet: Optional[models.Instruction] = (
@@ -361,9 +338,7 @@ def create_redopcr_workflow(
             db.query(models.Instruction)
             .join(models.Workflow)
             .filter(models.Workflow.id == workflow_id)
-            .filter(
-                models.Instruction.category == "pcr_echo_instructions.csv"
-            )
+            .filter(models.Instruction.category == "pcr_echo_instructions.csv")
             .filter(models.Instruction.trial == redo_trial)
             .one()
         )
@@ -412,9 +387,7 @@ def create_consolidatepcr_workflow(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     pcr_trial_files = (
         db.query(models.Run.raw_data, models.Instruction.trial)
         .join(models.Instruction)
@@ -430,10 +403,8 @@ def create_consolidatepcr_workflow(
         f"trial_{i}": io.StringIO(pcr_trial_file)
         for pcr_trial_file, i in pcr_trial_files
     }
-    consolidate_pcr_instructions_zip = consolidate_pcr_trials_main(
-        pcr_trial_files_dict
-    )
-    consolidate_pcr_instruction: models.Instruction = (
+    consolidate_pcr_instructions_zip = consolidate_pcr_trials_main(pcr_trial_files_dict)
+    (
         add_consolidate_pcr_instructions_to_db(
             db=db,
             owner_id=current_user.id,
@@ -520,9 +491,7 @@ def combine_pcr_and_assembly_zips(
     import zipfile
 
     with zipfile.ZipFile(pcr_zip, mode="r") as F:
-        biomek_instructions: str = F.read(
-            "biomek_instructions.csv"
-        ).decode("utf-8")
+        biomek_instructions: str = F.read("biomek_instructions.csv").decode("utf-8")
         consolidated_pcr_worksheet: str = F.read(
             "consolidated_pcr_worksheet.csv"
         ).decode("utf-8")
@@ -578,9 +547,7 @@ def combine_pcr_and_assembly_zips(
             "consolidate_pcrs/consolidated_pcr_worksheet.csv",
             consolidated_pcr_worksheet,
         )
-        archive.writestr(
-            "plating/plating_instructions.csv", plating_instructions
-        )
+        archive.writestr("plating/plating_instructions.csv", plating_instructions)
     zip_results.seek(0)
     return zip_results
 
@@ -598,21 +565,15 @@ def get_possible_assembly(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
-    assembly_instructions: List[
-        models.Instruction
-    ] = crud.instruction.find(
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    assembly_instructions: List[models.Instruction] = crud.instruction.find(
         db=db,
         workflow_id=id,
         obj_in={"category": "assembly_instructions.zip", "trial": 1},
     )
     result_zip: str = ""
     if not assembly_instructions:
-        raise HTTPException(
-            status_code=422, detail="Possible assembly not found"
-        )
+        raise HTTPException(status_code=422, detail="Possible assembly not found")
     else:
         result_zip = assembly_instructions[0].data
     return StreamingResponse(

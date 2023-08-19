@@ -96,12 +96,8 @@ def update_pcr(
     pcr = crud.pcr.get(db=db, id=id)
     if not pcr:
         raise HTTPException(status_code=404, detail="PCR not found")
-    if not crud.user.is_superuser(current_user) and (
-        pcr.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (pcr.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     pcr = crud.pcr.update(db=db, db_obj=pcr, obj_in=pcr_in)
     return pcr
 
@@ -119,12 +115,8 @@ def read_pcr(
     pcr = crud.pcr.get(db=db, id=id)
     if not pcr:
         raise HTTPException(status_code=404, detail="PCR not found")
-    if not crud.user.is_superuser(current_user) and (
-        pcr.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (pcr.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return pcr
 
 
@@ -141,11 +133,7 @@ def delete_pcr(
     pcr = crud.pcr.get(db=db, id=id)
     if not pcr:
         raise HTTPException(status_code=404, detail="PCR not found")
-    if not crud.user.is_superuser(current_user) and (
-        pcr.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (pcr.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     pcr = crud.pcr.remove(db=db, id=id)
     return pcr

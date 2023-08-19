@@ -9,10 +9,7 @@ from app.tests.utils.workflow import create_random_workflow
 
 
 def create_random_plate(
-    db: Session,
-    *,
-    owner_id: Optional[int] = None,
-    workflow_id: Optional[int] = None
+    db: Session, *, owner_id: Optional[int] = None, workflow_id: Optional[int] = None
 ) -> models.Plate:
     if owner_id is None:
         user = create_random_user(db)

@@ -7,8 +7,7 @@ from app.tests.utils.part import create_random_part
 from app.tests.utils.pcr import create_random_pcr
 from app.tests.utils.template import create_random_template
 from app.tests.utils.user import create_random_user
-from app.tests.utils.utils import (random_float, random_integer,
-                                   random_lower_string)
+from app.tests.utils.utils import random_float, random_integer, random_lower_string
 
 
 def test_create_pcr_with_template(db: Session) -> None:
@@ -84,9 +83,7 @@ def test_update_pcr(db: Session) -> None:
     assert pcr.mean_oligo_temp == pytest.approx(pcr2.mean_oligo_temp)
     assert pcr.delta_oligo_temp == pytest.approx(pcr2.delta_oligo_temp)
     assert pcr.mean_oligo_temp_3p == pytest.approx(pcr2.mean_oligo_temp_3p)
-    assert pcr.delta_oligo_temp_3p == pytest.approx(
-        pcr2.delta_oligo_temp_3p
-    )
+    assert pcr.delta_oligo_temp_3p == pytest.approx(pcr2.delta_oligo_temp_3p)
     assert pcr.length == pcr2.length
     assert pcr.sequence == pcr2.sequence
     assert pcr.part_id == pcr2.part.id

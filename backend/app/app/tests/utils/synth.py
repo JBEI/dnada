@@ -5,15 +5,11 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.tests.utils.design import create_random_design
 from app.tests.utils.user import create_random_user
-from app.tests.utils.utils import (random_float, random_integer,
-                                   random_lower_string)
+from app.tests.utils.utils import random_float, random_integer, random_lower_string
 
 
 def create_random_synth(
-    db: Session,
-    *,
-    owner_id: Optional[int] = None,
-    design_id: Optional[int] = None
+    db: Session, *, owner_id: Optional[int] = None, design_id: Optional[int] = None
 ) -> models.Synth:
     if owner_id is None:
         user = create_random_user(db)

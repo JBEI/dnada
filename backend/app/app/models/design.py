@@ -21,9 +21,7 @@ class Design(Base):
     # Experiment
     experiment_id = Column(
         Integer,
-        ForeignKey(
-            "experiment.id", ondelete="CASCADE", onupdate="CASCADE"
-        ),
+        ForeignKey("experiment.id", ondelete="CASCADE", onupdate="CASCADE"),
     )
     experiment = relationship("Experiment", back_populates="designs")
     # Children

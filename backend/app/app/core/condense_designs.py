@@ -14,9 +14,7 @@ def condense_designs(designs: List[schemas.J5Design]) -> schemas.J5Design:
         zip_file_name=f"{today()}_condensed_design",
         master_j5=master_j5,
         plasmid_maps=[
-            plasmid_map
-            for design in designs
-            for plasmid_map in design.plasmid_maps
+            plasmid_map for design in designs for plasmid_map in design.plasmid_maps
         ],
         plasmid_designs=[
             plasmid_design

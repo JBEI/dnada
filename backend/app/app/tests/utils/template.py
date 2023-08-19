@@ -23,9 +23,7 @@ def create_random_template(
         design = create_random_design(db, owner_id=owner_id)
         design_id = design.id
     if synth_id is None:
-        synth = create_random_synth(
-            db, owner_id=owner_id, design_id=design_id
-        )
+        synth = create_random_synth(db, owner_id=owner_id, design_id=design_id)
         synth_id = synth.id
     j5_template_id = random_integer()
     name = random_lower_string()

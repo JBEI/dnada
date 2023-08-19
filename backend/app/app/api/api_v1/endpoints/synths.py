@@ -89,15 +89,9 @@ def update_synth(
     """
     synth = crud.synth.get(db=db, id=id)
     if not synth:
-        raise HTTPException(
-            status_code=404, detail="schemas.Synth not found"
-        )
-    if not crud.user.is_superuser(current_user) and (
-        synth.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=404, detail="schemas.Synth not found")
+    if not crud.user.is_superuser(current_user) and (synth.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     synth = crud.synth.update(db=db, db_obj=synth, obj_in=synth_in)
     return synth
 
@@ -114,15 +108,9 @@ def read_synth(
     """
     synth = crud.synth.get(db=db, id=id)
     if not synth:
-        raise HTTPException(
-            status_code=404, detail="schemas.Synth not found"
-        )
-    if not crud.user.is_superuser(current_user) and (
-        synth.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=404, detail="schemas.Synth not found")
+    if not crud.user.is_superuser(current_user) and (synth.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return synth
 
 
@@ -138,14 +126,8 @@ def delete_synth(
     """
     synth = crud.synth.get(db=db, id=id)
     if not synth:
-        raise HTTPException(
-            status_code=404, detail="schemas.Synth not found"
-        )
-    if not crud.user.is_superuser(current_user) and (
-        synth.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=404, detail="schemas.Synth not found")
+    if not crud.user.is_superuser(current_user) and (synth.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     synth = crud.synth.remove(db=db, id=id)
     return synth

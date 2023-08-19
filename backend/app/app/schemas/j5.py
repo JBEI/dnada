@@ -96,16 +96,12 @@ class MasterJ5(BaseModel):
     def add_part_sources(self, section_str: str) -> None:
         self.part_sources = schemas.MasterJ5PartSources.validate(
             pd.read_csv(io.StringIO(section_str), skiprows=2).assign(
-                AA_Sequence=lambda df: df.Sequence.apply(
-                    translate_dna_to_aa
-                )
+                AA_Sequence=lambda df: df.Sequence.apply(translate_dna_to_aa)
             )
         )
 
     def add_pcr_reactions(self, section_str: str) -> None:
-        df = pd.read_csv(
-            io.StringIO(section_str), skiprows=1, mangle_dupe_cols=True
-        )
+        df = pd.read_csv(io.StringIO(section_str), skiprows=1, mangle_dupe_cols=True)
         df = df.rename(
             columns={
                 "ID Number.1": "forward_primer_id",
@@ -117,15 +113,11 @@ class MasterJ5(BaseModel):
         self.pcr_reactions = schemas.MasterJ5PCRs.validate(df)
 
     def add_parts(self, section_str: str, method: str) -> None:
-        df = pd.read_csv(io.StringIO(section_str), skiprows=1).assign(
-            Method=method
-        )
+        df = pd.read_csv(io.StringIO(section_str), skiprows=1).assign(Method=method)
         if self.parts is None:
             self.parts = schemas.MasterJ5Parts.validate(df)
         else:
-            self.parts = schemas.MasterJ5Parts.validate(
-                self.parts.append(df)
-            )
+            self.parts = schemas.MasterJ5Parts.validate(self.parts.append(df))
 
     def add_assemblies(self, section_str: str) -> None:
         df = pd.read_csv(io.StringIO(section_str), skiprows=2)
@@ -149,9 +141,7 @@ class MasterJ5(BaseModel):
             section.strip() for section in master_j5_csv.split("\n\n")
         ]
         if not section_strs:
-            raise KeyError(
-                "There wasn't a single section found in the master_j5 file"
-            )
+            raise KeyError("There wasn't a single section found in the master_j5 file")
 
         master_j5: MasterJ5 = cls()
 
@@ -160,9 +150,7 @@ class MasterJ5(BaseModel):
         for section_str in section_strs[1:]:
             if section_str.startswith('"Digest Linearized Pieces'):
                 master_j5.add_digests(section_str)
-            elif section_str.startswith(
-                '"Non-degenerate Part IDs and Sources'
-            ):
+            elif section_str.startswith('"Non-degenerate Part IDs and Sources'):
                 master_j5.add_part_sources(section_str)
             elif section_str.startswith('"Direct Synthesis'):
                 master_j5.add_direct_synthesis(section_str)
@@ -170,15 +158,11 @@ class MasterJ5(BaseModel):
                 master_j5.add_oligos(section_str)
             elif section_str.startswith('"PCR Reactions'):
                 master_j5.add_pcr_reactions(section_str)
-            elif section_str.startswith(
-                '"Assembly Pieces (SLIC/Gibson/CPEC)'
-            ):
+            elif section_str.startswith('"Assembly Pieces (SLIC/Gibson/CPEC)'):
                 master_j5.add_parts(section_str, method="SLIC/Gibson/CPEC")
             elif section_str.startswith('"Assembly Pieces (Golden-gate)'):
                 master_j5.add_parts(section_str, method="Golden-gate")
-            elif section_str.startswith(
-                '"Combinations of Assembly Pieces'
-            ):
+            elif section_str.startswith('"Combinations of Assembly Pieces'):
                 master_j5.add_assemblies(section_str)
             elif section_str.startswith(
                 '"Suggested Assembly Piece Contigs For Hierarchical Assembly'  # noqa: E501
@@ -188,9 +172,7 @@ class MasterJ5(BaseModel):
                 pass
             elif section_str.startswith('"Note'):
                 pass
-            elif section_str.startswith(
-                '"Combinatorial overhang/overlap design:'
-            ):
+            elif section_str.startswith('"Combinatorial overhang/overlap design:'):
                 pass
             elif section_str.startswith(
                 '"Target Bin Selected Relative Overlap Positions and Extra'
@@ -209,9 +191,7 @@ class MasterJ5(BaseModel):
         return master_j5
 
     @classmethod
-    def condense_designs(
-        cls, individual_designs: List["MasterJ5"]
-    ) -> "MasterJ5":
+    def condense_designs(cls, individual_designs: List["MasterJ5"]) -> "MasterJ5":
         """Condense multiple MasterJ5 designs into single MasterJ5"""
         master_j5: MasterJ5 = cls()
 
@@ -315,14 +295,10 @@ class MasterJ5(BaseModel):
                 )
                 .assign(
                     forward_primer_id=(
-                        lambda df: df.forward_primer_id_y.fillna(
-                            df.forward_primer_id_x
-                        )
+                        lambda df: df.forward_primer_id_y.fillna(df.forward_primer_id_x)
                     ),
                     reverse_primer_id=(
-                        lambda df: df.reverse_primer_id_y.fillna(
-                            df.reverse_primer_id_x
-                        )
+                        lambda df: df.reverse_primer_id_y.fillna(df.reverse_primer_id_x)
                     ),
                 )
                 .drop(
@@ -359,17 +335,13 @@ class MasterJ5(BaseModel):
 
         updated_design_parts: List[DataFrame[schemas.MasterJ5Parts]] = []
         for design_parts in [
-            design.parts
-            for design in individual_designs
-            if design.parts is not None
+            design.parts for design in individual_designs if design.parts is not None
         ]:
             new_design_parts = design_parts.copy()
             if master_j5.pcr_reactions is not None:
                 new_design_parts = (
                     new_design_parts.merge(
-                        right=master_j5.pcr_reactions[
-                            ["ID Number", "Sequence"]
-                        ].rename(
+                        right=master_j5.pcr_reactions[["ID Number", "Sequence"]].rename(
                             columns={
                                 "ID Number": "Type ID Number",
                             }
@@ -379,9 +351,9 @@ class MasterJ5(BaseModel):
                     )
                     .assign(
                         **{
-                            "Type ID Number": lambda df: df[
-                                "Type ID Number_y"
-                            ].fillna(df["Type ID Number_x"])
+                            "Type ID Number": lambda df: df["Type ID Number_y"].fillna(
+                                df["Type ID Number_x"]
+                            )
                         }
                     )
                     .drop(
@@ -394,9 +366,7 @@ class MasterJ5(BaseModel):
             if master_j5.digests is not None:
                 new_design_parts = (
                     new_design_parts.merge(
-                        right=master_j5.digests[
-                            ["ID Number", "Sequence"]
-                        ].rename(
+                        right=master_j5.digests[["ID Number", "Sequence"]].rename(
                             columns={
                                 "ID Number": "Type ID Number",
                             }
@@ -406,9 +376,9 @@ class MasterJ5(BaseModel):
                     )
                     .assign(
                         **{
-                            "Type ID Number": lambda df: df[
-                                "Type ID Number_y"
-                            ].fillna(df["Type ID Number_x"])
+                            "Type ID Number": lambda df: df["Type ID Number_y"].fillna(
+                                df["Type ID Number_x"]
+                            )
                         }
                     )
                     .drop(
@@ -441,9 +411,7 @@ class MasterJ5(BaseModel):
                 # Merge to get mapping from original ID Number to
                 # updated ID Number
                 part_id_mapping = (
-                    updated_design_part[
-                        ["ID Number", "Type", "Type ID Number"]
-                    ]
+                    updated_design_part[["ID Number", "Type", "Type ID Number"]]
                     .merge(
                         right=master_j5.parts[
                             ["ID Number", "Type", "Type ID Number"]
@@ -455,9 +423,7 @@ class MasterJ5(BaseModel):
                 )
                 part_id_mappings.append(part_id_mapping)
 
-        updated_design_assemblies: List[
-            DataFrame[schemas.MasterJ5Assemblies]
-        ] = []
+        updated_design_assemblies: List[DataFrame[schemas.MasterJ5Assemblies]] = []
         for i, design_assemblies in enumerate(
             [
                 design.assemblies
@@ -468,9 +434,7 @@ class MasterJ5(BaseModel):
             if master_j5.parts is not None:
                 updated_design_assembly = design_assemblies.copy()
                 for j in range(int((design_assemblies.shape[1] - 3) / 2)):
-                    name_of_column_to_update = (
-                        f"Assembly Piece ID Number.{j}"
-                    )
+                    name_of_column_to_update = f"Assembly Piece ID Number.{j}"
                     updated_design_assembly[
                         name_of_column_to_update
                     ] = updated_design_assembly.merge(
@@ -515,21 +479,13 @@ class MasterJ5(BaseModel):
 
         master_j5.header = master_j5_dict["header"]
         master_j5.digests = pd.read_json(master_j5_dict["digests"])
-        master_j5.part_sources = pd.read_json(
-            master_j5_dict["part_sources"]
-        )
-        master_j5.direct_synthesis = pd.read_json(
-            master_j5_dict["direct_synthesis"]
-        )
+        master_j5.part_sources = pd.read_json(master_j5_dict["part_sources"])
+        master_j5.direct_synthesis = pd.read_json(master_j5_dict["direct_synthesis"])
         master_j5.oligos = pd.read_json(master_j5_dict["oligos"])
-        master_j5.pcr_reactions = pd.read_json(
-            master_j5_dict["pcr_reactions"]
-        )
+        master_j5.pcr_reactions = pd.read_json(master_j5_dict["pcr_reactions"])
         master_j5.parts = pd.read_json(master_j5_dict["parts"])
         master_j5.assemblies = pd.read_json(master_j5_dict["assemblies"])
-        master_j5.skinny_assemblies = pd.read_json(
-            master_j5_dict["skinny_assemblies"]
-        )
+        master_j5.skinny_assemblies = pd.read_json(master_j5_dict["skinny_assemblies"])
 
         return master_j5
 
@@ -539,9 +495,7 @@ class MasterJ5(BaseModel):
             {
                 "header": self.header,
                 "digests": (
-                    self.digests.to_json()
-                    if self.digests is not None
-                    else None
+                    self.digests.to_json() if self.digests is not None else None
                 ),
                 "part_sources": (
                     self.part_sources.to_json()
@@ -553,25 +507,15 @@ class MasterJ5(BaseModel):
                     if self.direct_synthesis is not None
                     else None
                 ),
-                "oligos": (
-                    self.oligos.to_json()
-                    if self.oligos is not None
-                    else None
-                ),
+                "oligos": (self.oligos.to_json() if self.oligos is not None else None),
                 "pcr_reactions": (
                     self.pcr_reactions.to_json()
                     if self.pcr_reactions is not None
                     else None
                 ),
-                "parts": (
-                    self.parts.to_json()
-                    if self.parts is not None
-                    else None
-                ),
+                "parts": (self.parts.to_json() if self.parts is not None else None),
                 "assemblies": (
-                    self.assemblies.to_json()
-                    if self.assemblies is not None
-                    else None
+                    self.assemblies.to_json() if self.assemblies is not None else None
                 ),
                 "skinny_assemblies": (
                     self.skinny_assemblies.to_json()
@@ -590,21 +534,15 @@ class MasterJ5(BaseModel):
                 self.part_sources.to_csv(index=False)
                 if self.part_sources is not None
                 else None,
-                self.digests.to_csv(index=False)
-                if self.digests is not None
-                else None,
+                self.digests.to_csv(index=False) if self.digests is not None else None,
                 self.direct_synthesis.to_csv(index=False)
                 if self.direct_synthesis is not None
                 else None,
-                self.oligos.to_csv(index=False)
-                if self.oligos is not None
-                else None,
+                self.oligos.to_csv(index=False) if self.oligos is not None else None,
                 self.pcr_reactions.to_csv(index=False)
                 if self.pcr_reactions is not None
                 else None,
-                self.parts.to_csv(index=False)
-                if self.parts is not None
-                else None,
+                self.parts.to_csv(index=False) if self.parts is not None else None,
                 self.assemblies.to_csv(index=False)
                 if self.assemblies is not None
                 else None,
@@ -644,9 +582,7 @@ class J5Design(BaseModel):
     plasmid_designs: List[PlasmidDesign]
 
     @validator("plasmid_maps")
-    def plasmid_names_must_be_unique(
-        cls, v: List[PlasmidMap]
-    ) -> List[PlasmidMap]:
+    def plasmid_names_must_be_unique(cls, v: List[PlasmidMap]) -> List[PlasmidMap]:
         plasmid_names = [plasmid.filename for plasmid in v]
         if len(plasmid_names) != len(set(plasmid_names)):
             raise ValueError("Plasmid names must be unique")
@@ -658,8 +594,6 @@ class J5Design(BaseModel):
                 "zip_file_name": self.zip_file_name,
                 "master_j5": self.master_j5.to_json(),
                 "plasmid_maps": [p.json() for p in self.plasmid_maps],
-                "plasmid_designs": [
-                    p.json() for p in self.plasmid_designs
-                ],
+                "plasmid_designs": [p.json() for p in self.plasmid_designs],
             }
         )

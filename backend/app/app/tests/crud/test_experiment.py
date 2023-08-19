@@ -9,13 +9,9 @@ from app.tests.utils.utils import random_lower_string
 def test_create_experiment(db: Session) -> None:
     name = random_lower_string()
     description = random_lower_string()
-    experiment_in = schemas.ExperimentCreate(
-        name=name, description=description
-    )
+    experiment_in = schemas.ExperimentCreate(name=name, description=description)
     user = create_random_user(db)
-    experiment = crud.experiment.create(
-        db=db, obj_in=experiment_in, owner_id=user.id
-    )
+    experiment = crud.experiment.create(db=db, obj_in=experiment_in, owner_id=user.id)
     assert experiment.name == name
     assert experiment.description == description
     assert experiment.owner_id == user.id

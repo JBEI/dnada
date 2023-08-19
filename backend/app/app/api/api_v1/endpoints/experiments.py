@@ -44,9 +44,7 @@ def find_experiments(
     return experiments
 
 
-@router.post(
-    "/experiments/get_or_create", response_model=schemas.Experiment
-)
+@router.post("/experiments/get_or_create", response_model=schemas.Experiment)
 def get_or_create_experiment(
     *,
     db: Session = Depends(deps.get_db),
@@ -78,9 +76,7 @@ def read_experiment(
     if not crud.user.is_superuser(current_user) and (
         experiment.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return experiment
 
 
@@ -117,12 +113,8 @@ def update_experiment(
     if not crud.user.is_superuser(current_user) and (
         experiment.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
-    experiment = crud.experiment.update(
-        db=db, db_obj=experiment, obj_in=experiment_in
-    )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    experiment = crud.experiment.update(db=db, db_obj=experiment, obj_in=experiment_in)
     return experiment
 
 
@@ -142,8 +134,6 @@ def delete_experiment(
     if not crud.user.is_superuser(current_user) and (
         experiment.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail=("Not enough permissions")
-        )
+        raise HTTPException(status_code=400, detail=("Not enough permissions"))
     experiment = crud.experiment.remove(db=db, id=id)
     return experiment

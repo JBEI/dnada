@@ -42,9 +42,7 @@ def test_get_workflowstep(db: Session) -> None:
     stored_workflowstep = crud.workflowstep.get(db=db, id=workflowstep.id)
     assert stored_workflowstep is not None
     assert workflowstep.id == stored_workflowstep.id
-    assert jsonable_encoder(workflowstep) == jsonable_encoder(
-        stored_workflowstep
-    )
+    assert jsonable_encoder(workflowstep) == jsonable_encoder(stored_workflowstep)
 
 
 def test_update_workflowstep(db: Session) -> None:
@@ -65,6 +63,4 @@ def test_delete_workflowstep(db: Session) -> None:
     workflowstep2 = crud.workflowstep.remove(db=db, id=workflowstep.id)
     workflowstep3 = crud.workflowstep.get(db=db, id=workflowstep.id)
     assert workflowstep3 is None
-    assert jsonable_encoder(workflowstep) == jsonable_encoder(
-        workflowstep2
-    )
+    assert jsonable_encoder(workflowstep) == jsonable_encoder(workflowstep2)

@@ -32,15 +32,11 @@ class ValidationResponse(BaseModel):
 
 
 class RegistryPlasmidSchema(pa.SchemaModel):
-    Principal_Investigator: Series[str] = pa.Field(
-        alias="Principal Investigator"
-    )
+    Principal_Investigator: Series[str] = pa.Field(alias="Principal Investigator")
     Principal_Investigator_Email: Series[str] = pa.Field(
         alias="Principal Investigator Email"
     )
-    BioSafety_Level: Series[int] = pa.Field(
-        alias="BioSafety Level", isin=[1, 2, 3]
-    )
+    BioSafety_Level: Series[int] = pa.Field(alias="BioSafety Level", isin=[1, 2, 3])
     Name: Series[str] = pa.Field()
     Alias: Series[str] = pa.Field(nullable=True)
     Keywords: Series[str] = pa.Field(nullable=True)
@@ -68,12 +64,8 @@ class RegistryPlasmidSchema(pa.SchemaModel):
             "Other",
         ],
     )
-    Intellectual_Property: Series[str] = pa.Field(
-        alias="Intellectual Property"
-    )
-    Origin_of_Replication: Series[str] = pa.Field(
-        alias="Origin of Replication"
-    )
+    Intellectual_Property: Series[str] = pa.Field(alias="Intellectual Property")
+    Origin_of_Replication: Series[str] = pa.Field(alias="Origin of Replication")
     Backbone: Series[str] = pa.Field()
     Sequence_File: Series[str] = pa.Field(alias="Sequence File")
 
@@ -162,9 +154,7 @@ class TemplatesPlateSchema(pa.SchemaModel):
 class EchoInstructionsSchema(pa.SchemaModel):
     Source_Plate_Name: Series[str] = pa.Field(alias="Source Plate Name")
     Source_Well: Series[str] = pa.Field(alias="Source Well")
-    Destination_Plate_Name: Series[str] = pa.Field(
-        alias="Destination Plate Name"
-    )
+    Destination_Plate_Name: Series[str] = pa.Field(alias="Destination Plate Name")
     Destination_Well: Series[str] = pa.Field(alias="Destination Well")
     Transfer_Volume: Series[int] = pa.Field(alias="Transfer Volume", ge=0)
 
@@ -188,9 +178,7 @@ class PCRInstructionsSchema(pa.SchemaModel):
     PRIMER2_WELL: Series[str] = pa.Field()
     PRIMER2_VOLUME: Series[int] = pa.Field(ge=0)
     Mean_Oligo_Tm: Series[float] = pa.Field(alias="Mean Oligo Tm", gt=0)
-    Mean_Oligo_Tm_NEB: Series[float] = pa.Field(
-        alias="Mean Oligo Tm (NEB)", gt=0
-    )
+    Mean_Oligo_Tm_NEB: Series[float] = pa.Field(alias="Mean Oligo Tm (NEB)", gt=0)
     OUTPUT_PLATE: Series[str] = pa.Field()
     OUTPUT_WELL: Series[str] = pa.Field()
     OPTIMAL_ANNEALING_TEMP: Series[float] = pa.Field(gt=0)
@@ -273,9 +261,7 @@ class ConstructWorksheetSchema(pa.SchemaModel):
     j5_construct_id: Series[int] = pa.Field(ge=0)
     name: Series[str] = pa.Field()
     parts: Series[str] = pa.Field()
-    assembly_method: Series[str] = pa.Field(
-        isin=["SLIC/Gibson/CPEC", "Golden-gate"]
-    )
+    assembly_method: Series[str] = pa.Field(isin=["SLIC/Gibson/CPEC", "Golden-gate"])
     src_plate: Series[str] = pa.Field()
     src_well: Series[str] = pa.Field()
 
@@ -291,9 +277,7 @@ class PlatingInstructionsSchema(ConstructWorksheetSchema):
 
 class MasterJ5Digests(pa.SchemaModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
-    Sequence_Source: Series[str] = pa.Field(
-        alias="Sequence Source", unique=True
-    )
+    Sequence_Source: Series[str] = pa.Field(alias="Sequence Source", unique=True)
     Length: Series[int] = pa.Field(gt=0)
     Sequence: Series[str] = pa.Field(is_dna_sequence=())
 
@@ -310,9 +294,7 @@ class MasterJ5Oligos(pa.SchemaModel):
     Tm3: Series[float] = pa.Field(alias="Tm (3' only)", gt=0)
     Cost: Series[float] = pa.Field(ge=0)
     Sequence: Series[str] = pa.Field(is_dna_sequence=())
-    Sequence3: Series[str] = pa.Field(
-        alias="Sequence (3' only)", is_dna_sequence=()
-    )
+    Sequence3: Series[str] = pa.Field(alias="Sequence (3' only)", is_dna_sequence=())
 
     class Config:
         strict = True
@@ -360,12 +342,8 @@ class MasterJ5PCRs(pa.SchemaModel):
     Note: Series[str] = pa.Field()
     Mean_Oligo_Tm: Series[float] = pa.Field(alias="Mean Oligo Tm", gt=0)
     Delta_Oligo_Tm: Series[float] = pa.Field(alias="Delta Oligo Tm", gt=0)
-    Mean_Oligo_Tm3: Series[float] = pa.Field(
-        alias="Mean Oligo Tm (3' only)", gt=0
-    )
-    Delta_Oligo_Tm3: Series[float] = pa.Field(
-        alias="Delta Oligo Tm (3' only)", gt=0
-    )
+    Mean_Oligo_Tm3: Series[float] = pa.Field(alias="Mean Oligo Tm (3' only)", gt=0)
+    Delta_Oligo_Tm3: Series[float] = pa.Field(alias="Delta Oligo Tm (3' only)", gt=0)
     Length: Series[int] = pa.Field(gt=0)
     Sequence: Series[str] = pa.Field(is_dna_sequence=())
 
@@ -376,9 +354,7 @@ class MasterJ5PCRs(pa.SchemaModel):
 
 class MasterJ5Parts(pa.SchemaModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
-    Method: Series[str] = pa.Field(
-        isin=["SLIC/Gibson/CPEC", "Golden-gate"]
-    )
+    Method: Series[str] = pa.Field(isin=["SLIC/Gibson/CPEC", "Golden-gate"])
     Type: Series[str] = pa.Field(
         isin=["PCR", "SOE", "Digest Linearized", "Direct Synthesis/PCR"]
     )
@@ -484,9 +460,7 @@ class AssemblyVolumeSchema(pa.SchemaModel):
     )
     TYPE_ID: Series[int] = pa.Field(ge=0)
     NUMBER_OF_USES: Series[int] = pa.Field(ge=0)
-    VOLUME_REQUIRED: Series[float] = pa.Field(
-        alias="VOLUME_REQUIRED_(uL)", ge=0
-    )
+    VOLUME_REQUIRED: Series[float] = pa.Field(alias="VOLUME_REQUIRED_(uL)", ge=0)
 
     class Config:
         strict = True
@@ -495,9 +469,7 @@ class AssemblyVolumeSchema(pa.SchemaModel):
 
 class AssemblyVolumeVerifiedSchema(AssemblyVolumeSchema):
     NUMBER_OF_RXNS_PERFORMED: Series[int] = pa.Field(gt=0)
-    VOLUME_OBTAINED: Series[float] = pa.Field(
-        alias="VOLUME_OBTAINED_(uL)", ge=0
-    )
+    VOLUME_OBTAINED: Series[float] = pa.Field(alias="VOLUME_OBTAINED_(uL)", ge=0)
     ENOUGH_VOLUME: Series[bool] = pa.Field()
     SOURCE_WELLS: Series[str] = pa.Field()
 
@@ -512,9 +484,7 @@ class AssemblyWorksheetSchema(MasterJ5SkinnyAssemblies):
     Parts_Summary: Series[str] = pa.Field(alias="Parts Summary")
 
 
-class EquimolarAssemblyWorksheetSchema(
-    AssemblyWorksheetSchema, PartsWorksheetSchema
-):
+class EquimolarAssemblyWorksheetSchema(AssemblyWorksheetSchema, PartsWorksheetSchema):
     MOLAR_CONCENTRATION: Series[float] = pa.Field(alias="Conc (fmol/uL)")
     EQUIMOLAR_VOLUME: Series[float] = pa.Field()
     fmol_used: Series[float] = pa.Field()

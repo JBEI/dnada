@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.crud.base import CRUDBaseWell
-from app.models.well import (DigestWell, OligoOrder96Well, OligoWell,
-                             PartWell, PCRWell, SynthWell, TemplateWell)
+from app.models.well import (DigestWell, OligoOrder96Well, OligoWell, PartWell, PCRWell,
+                             SynthWell, TemplateWell)
 
 
 class CRUDOligoWell(
@@ -40,9 +40,7 @@ class CRUDOligoWell(
             .filter(models.Workflow.id == workflow_id)
         )
         oligos_df["content_id"] = oligos_df["oligo_name"].apply(
-            lambda oligo_name: oligos.filter(
-                models.Oligo.name == oligo_name
-            ).one()[0]
+            lambda oligo_name: oligos.filter(models.Oligo.name == oligo_name).one()[0]
         )
         oligos_df["owner_id"] = owner_id
         oligos_df["plate_id"] = oligos_df["plate_name"].apply(
@@ -62,9 +60,7 @@ class CRUDOligoWell(
 
 
 class CRUDOligoOrder96Well(
-    CRUDBaseWell[
-        models.OligoOrder96Well, schemas.WellCreate, schemas.WellUpdate
-    ]
+    CRUDBaseWell[models.OligoOrder96Well, schemas.WellCreate, schemas.WellUpdate]
 ):
 
     """CRUD Methods for Oligo Order 96 Wells"""
@@ -81,9 +77,7 @@ class CRUDOligoOrder96Well(
         pass
 
 
-class CRUDDigestWell(
-    CRUDBaseWell[DigestWell, schemas.WellCreate, schemas.WellUpdate]
-):
+class CRUDDigestWell(CRUDBaseWell[DigestWell, schemas.WellCreate, schemas.WellUpdate]):
 
     """CRUD Methods for Digest Wells"""
 
@@ -115,9 +109,7 @@ class CRUDDigestWell(
         )
         digests_df["well_type"] = "digest"
         digests_df["volume"] = 50
-        digests_df = digests_df.rename(
-            columns={"DIGEST_SOURCE_WELL": "location"}
-        )
+        digests_df = digests_df.rename(columns={"DIGEST_SOURCE_WELL": "location"})
         return digests_df.loc[
             :,
             [
@@ -131,9 +123,7 @@ class CRUDDigestWell(
         ].to_json()
 
 
-class CRUDSynthWell(
-    CRUDBaseWell[SynthWell, schemas.WellCreate, schemas.WellUpdate]
-):
+class CRUDSynthWell(CRUDBaseWell[SynthWell, schemas.WellCreate, schemas.WellUpdate]):
 
     """CRUD Methods for Synth Wells"""
 
@@ -154,9 +144,7 @@ class CRUDSynthWell(
             .filter(models.Workflow.id == workflow_id)
         )
         synths_df["content_id"] = synths_df["LIQUID TYPE"].apply(
-            lambda synth_name: synths.filter(
-                models.Synth.name == synth_name
-            ).one()[0]
+            lambda synth_name: synths.filter(models.Synth.name == synth_name).one()[0]
         )
         synths_df["owner_id"] = owner_id
         synths_df["plate_id"] = synths_df["PLATE ID"].apply(
@@ -179,9 +167,7 @@ class CRUDSynthWell(
         ].to_json()
 
 
-class CRUDPCRWell(
-    CRUDBaseWell[PCRWell, schemas.WellCreate, schemas.WellUpdate]
-):
+class CRUDPCRWell(CRUDBaseWell[PCRWell, schemas.WellCreate, schemas.WellUpdate]):
 
     """CRUD Methods for PCR Wells"""
 
@@ -203,9 +189,7 @@ class CRUDPCRWell(
             .filter(models.Workflow.id == workflow_id)
         )
         pcrs_df["content_id"] = pcrs_df["REACTION_NUMBER"].apply(
-            lambda pcr_id: pcrs.filter(
-                models.PCR.j5_pcr_id == pcr_id
-            ).one()[0]
+            lambda pcr_id: pcrs.filter(models.PCR.j5_pcr_id == pcr_id).one()[0]
         )
         pcrs_df["owner_id"] = owner_id
         redo: bool = False
@@ -285,9 +269,7 @@ class CRUDTemplateWell(
         ].to_json()
 
 
-class CRUDPartWell(
-    CRUDBaseWell[PartWell, schemas.WellCreate, schemas.WellUpdate]
-):
+class CRUDPartWell(CRUDBaseWell[PartWell, schemas.WellCreate, schemas.WellUpdate]):
 
     """CRUD Methods for Part Wells"""
 
@@ -308,9 +290,7 @@ class CRUDPartWell(
             .filter(models.Workflow.id == workflow_id)
         )
         parts_df["content_id"] = parts_df["PART_ID"].apply(
-            lambda part_id: parts.filter(
-                models.Part.j5_part_id == part_id
-            ).one()[0]
+            lambda part_id: parts.filter(models.Part.j5_part_id == part_id).one()[0]
         )
         parts_df["owner_id"] = owner_id
         parts_df["plate_id"] = parts_df["PART_PLATE"].apply(

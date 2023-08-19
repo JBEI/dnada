@@ -45,7 +45,5 @@ async def standalone_validate_csv_schema(
                 ok=True, text=f"Passed {schema} validation"
             )
         except Exception as err:
-            validation = schemas.ValidationResponse(
-                ok=False, text=str(err)
-            )
+            validation = schemas.ValidationResponse(ok=False, text=str(err))
     return validation

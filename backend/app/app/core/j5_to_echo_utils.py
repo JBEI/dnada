@@ -4,14 +4,10 @@ import ast
 import itertools
 import os
 from fnmatch import fnmatch
-from typing import Dict, List, Optional, Tuple
-from urllib.parse import urljoin
+from typing import Dict, List, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import requests
-import seaborn as sns
 from fastapi import HTTPException
 
 OUTPUT_OLIGOS_PLATE_FILENAME = "oligos_plate.csv"
@@ -68,13 +64,10 @@ def stamp(sourceWell: str, location: int) -> str:
     'A3'
     """
     standard96Wells = [
-        f"{row}{column}"
-        for row, column in itertools.product("ABCDEFGH", range(1, 13))
+        f"{row}{column}" for row, column in itertools.product("ABCDEFGH", range(1, 13))
     ]
     assert location in [0, 1, 2, 3], "Not a valid 384-well plate location"
-    assert (
-        sourceWell in standard96Wells
-    ), "Not a valid well in 96-well plate"
+    assert sourceWell in standard96Wells, "Not a valid well in 96-well plate"
     stampMap: Dict[int, Dict[str, str]] = {0: {}, 1: {}, 2: {}, 3: {}}
     stampMap[0] = {
         well96: well384
@@ -82,9 +75,7 @@ def stamp(sourceWell: str, location: int) -> str:
             standard96Wells,
             [
                 f"{row}{column}"
-                for row, column in itertools.product(
-                    "ACEGIKMO", range(1, 25, 2)
-                )
+                for row, column in itertools.product("ACEGIKMO", range(1, 25, 2))
             ],
         )
     }
@@ -94,9 +85,7 @@ def stamp(sourceWell: str, location: int) -> str:
             standard96Wells,
             [
                 f"{row}{column}"
-                for row, column in itertools.product(
-                    "ACEGIKMO", range(2, 25, 2)
-                )
+                for row, column in itertools.product("ACEGIKMO", range(2, 25, 2))
             ],
         )
     }
@@ -106,9 +95,7 @@ def stamp(sourceWell: str, location: int) -> str:
             standard96Wells,
             [
                 f"{row}{column}"
-                for row, column in itertools.product(
-                    "BDFHJLNP", range(1, 25, 2)
-                )
+                for row, column in itertools.product("BDFHJLNP", range(1, 25, 2))
             ],
         )
     }
@@ -118,9 +105,7 @@ def stamp(sourceWell: str, location: int) -> str:
             standard96Wells,
             [
                 f"{row}{column}"
-                for row, column in itertools.product(
-                    "BDFHJLNP", range(2, 25, 2)
-                )
+                for row, column in itertools.product("BDFHJLNP", range(2, 25, 2))
             ],
         )
     }
@@ -379,9 +364,7 @@ def updateExistingOligoPlate(existingPlate, newPlate):
     # Left-Excluding Join to get oligos that don't exist yet
     # See: https://stackoverflow.com/questions/53645882/pandas-merging-101
     nonExistingOligos = (
-        newPlate.merge(
-            existingPlate, on="LIQUID TYPE", how="left", indicator=True
-        )
+        newPlate.merge(existingPlate, on="LIQUID TYPE", how="left", indicator=True)
         .query('_merge == "left_only"')
         .drop("_merge", 1)
         .sort_values(by="LIQUID TYPE")
@@ -390,23 +373,18 @@ def updateExistingOligoPlate(existingPlate, newPlate):
     )
     for oligo in nonExistingOligos.values:
         existingPlate = existingPlate.append(
-            pd.Series(
-                [np.nan, np.nan, oligo, 50], index=existingPlate.columns
-            ),
+            pd.Series([np.nan, np.nan, oligo, 50], index=existingPlate.columns),
             ignore_index=True,
         )
     existingPlate["PLATE WELL"] = (
         [
             f"{row}{column}"
-            for row, column in itertools.product(
-                "ABCDEFGHIJKLMNOP", range(1, 25)
-            )
+            for row, column in itertools.product("ABCDEFGHIJKLMNOP", range(1, 25))
         ]
         * 20
     )[: existingPlate.shape[0]]
     existingPlate["PLATE ID"] = [
-        f"oligos_plate_{index//384 + 1}"
-        for index in range(existingPlate.shape[0])
+        f"oligos_plate_{index//384 + 1}" for index in range(existingPlate.shape[0])
     ]
 
     tmpOligoDF = pd.DataFrame()
@@ -452,9 +430,7 @@ def updateExistingTemplatePlate(existingPlate, newPlate):
     # Left-Excluding Join to get oligos that don't exist yet
     # See: https://stackoverflow.com/questions/53645882/pandas-merging-101
     nonExistingParts = (
-        newPlate.merge(
-            existingPlate, on="LIQUID TYPE", how="left", indicator=True
-        )
+        newPlate.merge(existingPlate, on="LIQUID TYPE", how="left", indicator=True)
         .query('_merge == "left_only"')
         .drop("_merge", 1)
         .sort_values(by="LIQUID TYPE")
@@ -502,10 +478,9 @@ def updateExistingTemplatePlate(existingPlate, newPlate):
         )
     ][: existingPlate.shape[0]]
 
-    tmpDF = existingPlate.loc[
-        existingPlate["LIQUID TYPE"].isin(nonExistingParts), :
-    ]
+    tmpDF = existingPlate.loc[existingPlate["LIQUID TYPE"].isin(nonExistingParts), :]
     return (existingPlate, tmpDF)
+
 
 def unstamp(destWell):
     """Unstamp a dest well from 384-well plate to a 96-well plate
@@ -535,17 +510,10 @@ def unstamp(destWell):
     """
     standard384Wells = [
         f"{row}{column}"
-        for row, column in itertools.product(
-            "ABCDEFGHIJKLMNOP", range(1, 25)
-        )
+        for row, column in itertools.product("ABCDEFGHIJKLMNOP", range(1, 25))
     ]
-    [
-        f"{row}{column}"
-        for row, column in itertools.product("ABCDEFGH", range(1, 13))
-    ]
-    assert (
-        destWell in standard384Wells
-    ), "Not a valid well in 384-well plate"
+    [f"{row}{column}" for row, column in itertools.product("ABCDEFGH", range(1, 13))]
+    assert destWell in standard384Wells, "Not a valid well in 384-well plate"
     stampMap = {
         well384: well96
         for well384, well96 in zip(
@@ -618,17 +586,10 @@ def unstampOligos(destWell):
     """
     standard384Wells = [
         f"{row}{column}"
-        for row, column in itertools.product(
-            "ABCDEFGHIJKLMNOP", range(1, 25)
-        )
+        for row, column in itertools.product("ABCDEFGHIJKLMNOP", range(1, 25))
     ]
-    [
-        f"{row}{column}"
-        for row, column in itertools.product("ABCDEFGH", range(1, 13))
-    ]
-    assert (
-        destWell in standard384Wells
-    ), "Not a valid well in 384-well plate"
+    [f"{row}{column}" for row, column in itertools.product("ABCDEFGH", range(1, 13))]
+    assert destWell in standard384Wells, "Not a valid well in 384-well plate"
     stampMap = {
         well384: well96
         for well384, well96 in zip(
@@ -769,9 +730,7 @@ def unstampOligos(destWell):
     return sourceWell
 
 
-def processPeakTable(
-    peakTableFile, plateName, write=True, need3Well=False
-):
+def processPeakTable(peakTableFile, plateName, write=True, need3Well=False):
     """Find dominant peaks in ZAG Peak File
 
     Arguments
@@ -814,27 +773,19 @@ def processPeakTable(
     rfuThreshold = 1500
     for well in peakTable.index.unique():
         filteredArea = peakTable.loc[
-            (peakTable.index == well)
-            & (peakTable["Size (bp)"] < sizeThreshold),
+            (peakTable.index == well) & (peakTable["Size (bp)"] < sizeThreshold),
             "ng/ul",
         ].sum()
-        originalWellTIC = peakTable.loc[
-            peakTable.index == well, "TIC (ng/ul)"
-        ].max()
+        originalWellTIC = peakTable.loc[peakTable.index == well, "TIC (ng/ul)"].max()
         filteredWellTIC = originalWellTIC - filteredArea
+        peakTable.loc[peakTable.index == well, "TIC (ng/ul)"] = filteredWellTIC
         peakTable.loc[
-            peakTable.index == well, "TIC (ng/ul)"
-        ] = filteredWellTIC
-        peakTable.loc[
-            (peakTable.index == well)
-            & (peakTable["Size (bp)"] < sizeThreshold),
+            (peakTable.index == well) & (peakTable["Size (bp)"] < sizeThreshold),
             "ng/ul",
         ] = 0
-        peakTable.loc[
-            peakTable.index == well, "% (Conc.)"
-        ] = peakTable.loc[peakTable.index == well, :].apply(
-            lambda row: (row["ng/ul"] / row["TIC (ng/ul)"]) * 100, axis=1
-        )
+        peakTable.loc[peakTable.index == well, "% (Conc.)"] = peakTable.loc[
+            peakTable.index == well, :
+        ].apply(lambda row: (row["ng/ul"] / row["TIC (ng/ul)"]) * 100, axis=1)
     validPeaks = peakTable.loc[
         (peakTable["% (Conc.)"] > 40.0)
         & (peakTable["ng/ul"] > 2.0)
@@ -861,15 +812,11 @@ def processPeakTable(
         index=wellsWithoutPeaks,
     )
     wellsWithoutPeaksDF = wellsWithoutPeaksDF.rename_axis("Well")
-    fullPlate = validPeaks.append(wellsWithoutPeaksDF).sort_values(
-        by="Well"
-    )
+    fullPlate = validPeaks.append(wellsWithoutPeaksDF).sort_values(by="Well")
     fullPlate["SOURCE_PLATE"] = plateName
     if need3Well:
         fullPlate["SOURCE_LOCATION"] = fullPlate.apply(
-            lambda row: "#".join(
-                [row["SOURCE_PLATE"], convert2WellTo3Well(row.name)]
-            ),
+            lambda row: "#".join([row["SOURCE_PLATE"], convert2WellTo3Well(row.name)]),
             axis=1,
         )
     else:
@@ -877,9 +824,7 @@ def processPeakTable(
             lambda row: "#".join([row["SOURCE_PLATE"], row.name]), axis=1
         )
     if write:
-        fullPlate.to_csv(
-            peakTableFile.replace(".csv", "-processed.csv"), index=True
-        )
+        fullPlate.to_csv(peakTableFile.replace(".csv", "-processed.csv"), index=True)
     return fullPlate
 
 
@@ -904,9 +849,7 @@ def bandIsExpected(band, expected, threshold=0.50):
         False otherwise
     """
     good = False
-    if (expected * (1 - threshold) < band) and (
-        band < expected * (1 + threshold)
-    ):
+    if (expected * (1 - threshold) < band) and (band < expected * (1 + threshold)):
         good = True
     return good
 
@@ -1049,10 +992,7 @@ def findPossibleConstructs(pcrWorksheet, assemblyWorksheet):
                     "PCR",
                 )
                 for column in assemblyDF.columns.values
-                if (
-                    column.endswith("Source Plate")
-                    and not pd.isna(row[column])
-                )
+                if (column.endswith("Source Plate") and not pd.isna(row[column]))
             ],
             axis=1,
         )
@@ -1082,10 +1022,7 @@ def identifyPartsForConstruct(row, partColumnHeaders, quantResults):
     for part in partColumnHeaders:
         try:
             concentration = quantResults.loc[
-                (
-                    row[f"{part} Source Plate"]
-                    == quantResults["PARTS_SOURCE_PLATE"]
-                )
+                (row[f"{part} Source Plate"] == quantResults["PARTS_SOURCE_PLATE"])
                 & (row[f"{part} Well"] == quantResults["PARTS_WELL"]),
                 "CONC",
             ].values[0]
@@ -1103,9 +1040,7 @@ def identifyPartsForConstruct(row, partColumnHeaders, quantResults):
     return constructStuff
 
 
-def calculateSingleConstructEquimolarVolumes(
-    constructData, maxfmol=100, maxVolume=5
-):
+def calculateSingleConstructEquimolarVolumes(constructData, maxfmol=100, maxVolume=5):
     """Create Equimolar Assembly instructions
 
     Arguments
@@ -1160,9 +1095,7 @@ def calculateSingleConstructEquimolarVolumes(
     return (newData, water)
 
 
-def createEquimolarAssemblyInstructions(
-    assemblyDF, quantDF, maxfmol=100, maxVolume=5
-):
+def createEquimolarAssemblyInstructions(assemblyDF, quantDF, maxfmol=100, maxVolume=5):
     """Create Equimolar Assembly instructions
 
     Arguments
@@ -1302,9 +1235,7 @@ def flattenColumn(df, column):
         columns=["I", column],
     )
     columnFlat = columnFlat.set_index("I")
-    return df.drop(column, 1).merge(
-        columnFlat, left_index=True, right_index=True
-    )
+    return df.drop(column, 1).merge(columnFlat, left_index=True, right_index=True)
 
 
 def convertWellToBiomekNumber(well):
@@ -1330,9 +1261,7 @@ def convertWellToBiomekNumber(well):
             for number, well in enumerate(
                 [
                     f"{row}{column}"
-                    for row, column in itertools.product(
-                        "ABCDEFGH", range(1, 13)
-                    )
+                    for row, column in itertools.product("ABCDEFGH", range(1, 13))
                 ]
             )
         }
@@ -1372,16 +1301,10 @@ def generateConsolidationInstructions(consolidatedWorksheet):
         consolidatedWorksheet["GOOD"]
     ].copy()
     consolidatedWorksheet["trial_src_plate"] = (
-        consolidatedWorksheet["trial"]
-        + "#"
-        + consolidatedWorksheet["src_plate"]
+        consolidatedWorksheet["trial"] + "#" + consolidatedWorksheet["src_plate"]
     )
-    numberOfSrcPlates = int(
-        consolidatedWorksheet["trial_src_plate"].unique().size
-    )
-    numberOfDestPlates = int(
-        consolidatedWorksheet["OUTPUT_PLATE"].unique().size
-    )
+    numberOfSrcPlates = int(consolidatedWorksheet["trial_src_plate"].unique().size)
+    numberOfDestPlates = int(consolidatedWorksheet["OUTPUT_PLATE"].unique().size)
     numberOfSamples = int(sum(consolidatedWorksheet["GOOD"]))
     volumeToMove = 50  # uL
 
@@ -1423,16 +1346,9 @@ def generateConsolidationInstructions(consolidatedWorksheet):
     # Preparing plate map csv
     srcPlates = np.sort(templateDF["src_plt"].unique())
     destPlates = np.sort(templateDF["dest_plt"].unique())
-    srcMap = [
-        (f"src_{i+1}", srcPlate) for i, srcPlate in enumerate(srcPlates)
-    ]
-    destMap = [
-        (f"dest_{i+1}", destPlate)
-        for i, destPlate in enumerate(destPlates)
-    ]
-    plateMaps = pd.DataFrame(
-        srcMap + destMap, columns=["biomek_name", "plate_name"]
-    )
+    srcMap = [(f"src_{i+1}", srcPlate) for i, srcPlate in enumerate(srcPlates)]
+    destMap = [(f"dest_{i+1}", destPlate) for i, destPlate in enumerate(destPlates)]
+    plateMaps = pd.DataFrame(srcMap + destMap, columns=["biomek_name", "plate_name"])
 
     # Making biomek readable csv instructions
     biomekInstructions = templateDF.copy()
@@ -1532,9 +1448,7 @@ def addControlToAssembly(control, assemblyDF):
     nextPlateNumber, nextWell = subsequentWell(
         lastPlateNumber, lastWell, direction="row"
     )
-    nextPlate = "_".join(
-        lastPlate.split("_")[:-1] + [str(nextPlateNumber)]
-    )
+    nextPlate = "_".join(lastPlate.split("_")[:-1] + [str(nextPlateNumber)])
 
     # Making a name for control row
     rowName = f'{control["Part(s)"]}_control'
@@ -1547,9 +1461,7 @@ def addControlToAssembly(control, assemblyDF):
         assemblyDF.loc[rowName, "Part(s) Source Plate"] = control[
             "FIRST_PART_SOURCE_PLATE"
         ]
-        assemblyDF.loc[rowName, "Part(s) Well"] = control[
-            "FIRST_PART_WELL"
-        ]
+        assemblyDF.loc[rowName, "Part(s) Well"] = control["FIRST_PART_WELL"]
         assemblyDF.loc[
             rowName, "Complete Construct Name"
         ] = f'(-) {control["Part(s)"]} control'
@@ -1813,24 +1725,14 @@ def tube_to_plate(clean_df, reaction):
             if user_key == key:
                 user_ID.append(value)
     user_df["ID"] = user_ID
-    dest_1_ID = list(
-        user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[0]]
-    )
-    dest_2_ID = list(
-        user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[1]]
-    )
-    dest_3_ID = list(
-        user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[2]]
-    )
-    dest_4_ID = list(
-        user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[3]]
-    )
+    dest_1_ID = list(user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[0]])
+    dest_2_ID = list(user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[1]])
+    dest_3_ID = list(user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[2]])
+    dest_4_ID = list(user_df["ID"][user_df["OUTPUT_PLATE"] == dest_plt_list[3]])
     dest_ID = [dest_1_ID, dest_2_ID, dest_3_ID, dest_4_ID]
     dest_ID = [x for x in dest_ID if x != []]
     dest_df = pd.DataFrame({"dest_pos": dest_plates, "dest_well": dest_ID})
-    dest_df["dest_well"] = (
-        dest_df["dest_well"].astype(str).str.replace("\[|\]|'", "")
-    )
+    dest_df["dest_well"] = dest_df["dest_well"].astype(str).str.replace("\[|\]|'", "")
     biomek_frames = [var_df, dest_df]
     biomek_df = pd.concat(biomek_frames, axis=1, join="outer")
     return biomek_df

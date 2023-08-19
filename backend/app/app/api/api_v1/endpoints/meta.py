@@ -119,9 +119,7 @@ def query_pcr(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     query = pd.read_sql(
         db.query(
             models.PCRResult.id,
@@ -172,9 +170,7 @@ def query_assembly(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     query = pd.read_sql(
         db.query(
             models.Workflow.id.label("workflow_id"),
@@ -221,9 +217,7 @@ def query_sequencing(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     query = pd.read_sql(
         db.query(
             models.Workflow.id.label("workflow_id"),
@@ -277,9 +271,7 @@ def query_overall(
     if not crud.user.is_superuser(current_user) and (
         workflow.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     query = pd.read_sql(
         db.query(
             models.Workflow.id.label("workflow_id"),

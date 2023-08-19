@@ -25,9 +25,7 @@ def random_bytestr() -> str:
     # First b64encode bytes then decode to str
     # Protocol to convert back from str to bytes
     # First encode bytes to utf-8 then b64decode to original bytes
-    return base64.b64encode(random_lower_string().encode("utf-8")).decode(
-        "utf-8"
-    )
+    return base64.b64encode(random_lower_string().encode("utf-8")).decode("utf-8")
 
 
 def random_lower_string() -> str:
@@ -43,9 +41,7 @@ def get_superuser_token_headers(client: TestClient) -> Dict[str, str]:
         "username": settings.FIRST_SUPERUSER,
         "password": settings.FIRST_SUPERUSER_PASSWORD,
     }
-    r = client.post(
-        f"{settings.API_V1_STR}/login/access-token", data=login_data
-    )
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
     tokens = r.json()
     a_token = tokens["access_token"]
     headers = {"Authorization": f"Bearer {a_token}"}

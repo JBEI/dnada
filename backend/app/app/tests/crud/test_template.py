@@ -46,9 +46,7 @@ def test_update_template(db: Session) -> None:
     template = create_random_template(db)
     name2 = random_lower_string()
     template_update = schemas.TemplateUpdate(name=name2)
-    template2 = crud.template.update(
-        db=db, db_obj=template, obj_in=template_update
-    )
+    template2 = crud.template.update(db=db, db_obj=template, obj_in=template_update)
     assert template2.name == name2
     assert template.id == template2.id
     assert template.j5_template_id == template2.j5_template_id

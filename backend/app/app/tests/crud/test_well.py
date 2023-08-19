@@ -44,18 +44,14 @@ def test_get_oligowell(db: Session) -> None:
     stored_oligowell = crud.oligowell.get(db=db, id=oligowell.id)
     assert stored_oligowell is not None
     assert oligowell.id == stored_oligowell.id
-    assert jsonable_encoder(oligowell) == jsonable_encoder(
-        stored_oligowell
-    )
+    assert jsonable_encoder(oligowell) == jsonable_encoder(stored_oligowell)
 
 
 def test_update_oligowell(db: Session) -> None:
     oligowell = create_random_oligowell(db)
     location2 = random_lower_string()
     oligowell_update = schemas.WellUpdate(location=location2)
-    oligowell2 = crud.oligowell.update(
-        db=db, db_obj=oligowell, obj_in=oligowell_update
-    )
+    oligowell2 = crud.oligowell.update(db=db, db_obj=oligowell, obj_in=oligowell_update)
     assert oligowell2.location == location2
     assert oligowell.id == oligowell2.id
     assert oligowell.volume == oligowell2.volume

@@ -10,9 +10,7 @@ from app.models.template import Template
 from app.schemas.template import TemplateCreate, TemplateUpdate
 
 
-class CRUDTemplate(
-    CRUDBaseDesign[Template, TemplateCreate, TemplateUpdate]
-):
+class CRUDTemplate(CRUDBaseDesign[Template, TemplateCreate, TemplateUpdate]):
 
     """CRUD Methods for Templates"""
 
@@ -78,9 +76,7 @@ class CRUDTemplate(
             else None,
             axis=1,
         )
-        templates["j5_template_id"] = range(
-            templates.sort_values("name").shape[0]
-        )
+        templates["j5_template_id"] = range(templates.sort_values("name").shape[0])
         return templates.loc[
             :,
             [

@@ -90,12 +90,8 @@ def update_oligo(
     oligo = crud.oligo.get(db=db, id=id)
     if not oligo:
         raise HTTPException(status_code=404, detail="Oligo not found")
-    if not crud.user.is_superuser(current_user) and (
-        oligo.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (oligo.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     oligo = crud.oligo.update(db=db, db_obj=oligo, obj_in=oligo_in)
     return oligo
 
@@ -113,12 +109,8 @@ def read_oligo(
     oligo = crud.oligo.get(db=db, id=id)
     if not oligo:
         raise HTTPException(status_code=404, detail="Oligo not found")
-    if not crud.user.is_superuser(current_user) and (
-        oligo.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (oligo.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return oligo
 
 
@@ -135,11 +127,7 @@ def delete_oligo(
     oligo = crud.oligo.get(db=db, id=id)
     if not oligo:
         raise HTTPException(status_code=404, detail="Oligo not found")
-    if not crud.user.is_superuser(current_user) and (
-        oligo.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (oligo.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     oligo = crud.oligo.remove(db=db, id=id)
     return oligo

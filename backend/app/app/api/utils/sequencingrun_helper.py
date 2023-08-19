@@ -54,7 +54,5 @@ def add_sequencing_results_to_db(
         :,
         ["result_type", "sequencing", "owner_id", "run_id", "sample_id"],
     ].to_json()
-    crud.sequencingresult.bulk_create(
-        db=db, ready_json=sequencing_results_json
-    )
+    crud.sequencingresult.bulk_create(db=db, ready_json=sequencing_results_json)
     return sequencing_run

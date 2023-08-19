@@ -36,9 +36,7 @@ def test_get_instruction(db: Session) -> None:
     stored_instruction = crud.instruction.get(db=db, id=instruction.id)
     assert stored_instruction is not None
     assert instruction.id == stored_instruction.id
-    assert jsonable_encoder(instruction) == jsonable_encoder(
-        stored_instruction
-    )
+    assert jsonable_encoder(instruction) == jsonable_encoder(stored_instruction)
 
 
 def test_update_instruction(db: Session) -> None:

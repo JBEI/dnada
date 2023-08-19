@@ -43,18 +43,14 @@ def test_get_construct(db: Session) -> None:
     assert stored_construct is not None
     assert construct.id == stored_construct.id
     assert construct.name == stored_construct.name
-    assert jsonable_encoder(construct) == jsonable_encoder(
-        stored_construct
-    )
+    assert jsonable_encoder(construct) == jsonable_encoder(stored_construct)
 
 
 def test_update_construct(db: Session) -> None:
     construct = create_random_construct(db)
     name2 = random_lower_string()
     construct_update = schemas.ConstructUpdate(name=name2)
-    construct2 = crud.construct.update(
-        db=db, db_obj=construct, obj_in=construct_update
-    )
+    construct2 = crud.construct.update(db=db, db_obj=construct, obj_in=construct_update)
     assert construct2.name == name2
     assert construct.id == construct2.id
     assert construct.design_id == construct2.design.id

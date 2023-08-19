@@ -3,6 +3,6 @@
 set -x
 
 mypy app
-black app -l 75 --check
-isort --recursive --line-width 75 --check-only app
+black app -l 88 --check
+isort --recursive --line-width 88 --check-only app
 flake8

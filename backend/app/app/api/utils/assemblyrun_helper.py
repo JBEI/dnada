@@ -71,7 +71,5 @@ def add_assembly_results_to_db(
         :,
         ["result_type", "colonies", "owner_id", "run_id", "sample_id"],
     ].to_json()
-    crud.assemblyresult.bulk_create(
-        db=db, ready_json=assembly_results_json
-    )
+    crud.assemblyresult.bulk_create(db=db, ready_json=assembly_results_json)
     return assembly_run

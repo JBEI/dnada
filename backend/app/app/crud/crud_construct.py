@@ -6,9 +6,7 @@ from app.models.construct import Construct
 from app.schemas.construct import ConstructCreate, ConstructUpdate
 
 
-class CRUDConstruct(
-    CRUDBaseDesign[Construct, ConstructCreate, ConstructUpdate]
-):
+class CRUDConstruct(CRUDBaseDesign[Construct, ConstructCreate, ConstructUpdate]):
 
     """CRUD Methods for Constructs"""
 

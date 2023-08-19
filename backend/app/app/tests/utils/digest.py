@@ -9,10 +9,7 @@ from app.tests.utils.utils import random_integer, random_lower_string
 
 
 def create_random_digest(
-    db: Session,
-    *,
-    owner_id: Optional[int] = None,
-    part_id: Optional[int] = None
+    db: Session, *, owner_id: Optional[int] = None, part_id: Optional[int] = None
 ) -> models.Digest:
     if owner_id is None:
         user = create_random_user(db)

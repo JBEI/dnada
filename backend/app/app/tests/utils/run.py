@@ -9,10 +9,7 @@ from app.tests.utils.utils import random_lower_string
 
 
 def create_random_run(
-    db: Session,
-    *,
-    owner_id: Optional[int] = None,
-    instruction_id: Optional[int] = None
+    db: Session, *, owner_id: Optional[int] = None, instruction_id: Optional[int] = None
 ) -> models.Run:
     if owner_id is None:
         user = create_random_user(db)

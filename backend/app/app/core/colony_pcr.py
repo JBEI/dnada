@@ -7,8 +7,7 @@ from typing import Dict, Tuple
 
 import pandas as pd
 
-from app.api.utils.post_automation import (create_plate_column,
-                                           create_well_column)
+from app.api.utils.post_automation import create_plate_column, create_well_column
 from app.core.j5_to_echo import create_echo_instructions
 from app.core.j5_to_echo_utils import stamp
 
@@ -39,13 +38,9 @@ def reverse_complement(dna: str) -> str:
 class PrimerWillNotAnneal(Exception):
     """Primer sequence not found in template"""
 
-    pass
-
 
 class PrimerAnnealsMultipleTimes(Exception):
     """Primer sequence found multiple times"""
-
-    pass
 
 
 def slice_plasmid(template: str, start: int, stop: int) -> str:
@@ -56,9 +51,7 @@ def slice_plasmid(template: str, start: int, stop: int) -> str:
         return template[start:] + template[:stop]
 
 
-def simulate_pcr(
-    template: str, fwd_primer: str, rev_primer: str
-) -> Tuple[int, str]:
+def simulate_pcr(template: str, fwd_primer: str, rev_primer: str) -> Tuple[int, str]:
     """Calculates length of PCR"""
     template = template.upper()
     start: int = template.find(fwd_primer.upper())
@@ -115,9 +108,7 @@ def create_colony_pcr_instructions(
     glycerol["PRIMER2_VOLUME"] = 4 * reaction_volume
     glycerol["PCR_LENGTH"] = glycerol["name"].apply(
         lambda plasmid: simulate_pcr(
-            template=sequences.loc[
-                sequences.Name == plasmid, "Bases"
-            ].values[0],
+            template=sequences.loc[sequences.Name == plasmid, "Bases"].values[0],
             fwd_primer=forward_primer,
             rev_primer=reverse_primer,
         )[0]

@@ -4,11 +4,9 @@
 import datetime
 import io
 import itertools
-import json
-from typing import Any, Dict, List, Set
+from typing import List
 
 import pandas as pd
-import requests
 
 
 def condense_plate_reader_data(
@@ -22,17 +20,12 @@ def condense_plate_reader_data(
     if plate_reader_data.shape[1] <= 5:
         plate_reader_file.seek(0)
         plate_reader_data = pd.read_csv(plate_reader_file, sep="\t")
-    plate_reader_data = plate_reader_data.rename(
-        columns={"Sample_ID": "Sample ID"}
-    )
+    plate_reader_data = plate_reader_data.rename(columns={"Sample_ID": "Sample ID"})
     possible_columns: List[str] = ["Time", "Sample ID", "Plate"] + [
-        f"{row}{column}"
-        for row, column in itertools.product("ABCDEFGH", range(1, 13))
+        f"{row}{column}" for row, column in itertools.product("ABCDEFGH", range(1, 13))
     ]
     columns_to_drop: List[str] = [
-        column
-        for column in plate_reader_data.columns
-        if column not in possible_columns
+        column for column in plate_reader_data.columns if column not in possible_columns
     ]
     plate_reader_data = plate_reader_data.drop(columns=columns_to_drop)
     results_df: pd.DataFrame = plate_reader_data.melt(
@@ -48,9 +41,7 @@ def condense_plate_reader_data(
             ),
         )
     )
-    results_file = results_df.to_csv(
-        index=False, date_format="%Y-%m-%d %I:%M:%S %p"
-    )
+    results_file = results_df.to_csv(index=False, date_format="%Y-%m-%d %I:%M:%S %p")
     return results_file
 
 

@@ -1,13 +1,11 @@
 from app.crud.base import CRUDBaseResult
 from app.db.base import AssemblyResult, PCRResult, SequencingResult
-from app.schemas import (AssemblyResultCreate, AssemblyResultUpdate,
-                         PCRResultCreate, PCRResultUpdate,
-                         SequencingResultCreate, SequencingResultUpdate)
+from app.schemas import (AssemblyResultCreate, AssemblyResultUpdate, PCRResultCreate,
+                         PCRResultUpdate, SequencingResultCreate,
+                         SequencingResultUpdate)
 
 
-class CRUDPCRResult(
-    CRUDBaseResult[PCRResult, PCRResultCreate, PCRResultUpdate]
-):
+class CRUDPCRResult(CRUDBaseResult[PCRResult, PCRResultCreate, PCRResultUpdate]):
 
     """CRUD Methods for PCR Results"""
 
@@ -53,18 +51,14 @@ class CRUDPCRResult(
 
 
 class CRUDAssemblyResult(
-    CRUDBaseResult[
-        AssemblyResult, AssemblyResultCreate, AssemblyResultUpdate
-    ]
+    CRUDBaseResult[AssemblyResult, AssemblyResultCreate, AssemblyResultUpdate]
 ):
 
     """CRUD Methods for Assembly Results"""
 
 
 class CRUDSequencingResult(
-    CRUDBaseResult[
-        SequencingResult, SequencingResultCreate, SequencingResultUpdate
-    ]
+    CRUDBaseResult[SequencingResult, SequencingResultCreate, SequencingResultUpdate]
 ):
 
     """CRUD Methods for Sequencing Results"""

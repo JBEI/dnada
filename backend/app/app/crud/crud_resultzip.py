@@ -3,9 +3,7 @@ from app.models.resultzip import ResultZip
 from app.schemas.resultzip import ResultZipCreate, ResultZipUpdate
 
 
-class CRUDResultZip(
-    CRUDBaseExperiment[ResultZip, ResultZipCreate, ResultZipUpdate]
-):
+class CRUDResultZip(CRUDBaseExperiment[ResultZip, ResultZipCreate, ResultZipUpdate]):
 
     """CRUD Methods for ResultZips"""
 

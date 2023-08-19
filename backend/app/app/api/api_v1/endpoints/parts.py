@@ -90,12 +90,8 @@ def update_part(
     part = crud.part.get(db=db, id=id)
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
-    if not crud.user.is_superuser(current_user) and (
-        part.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (part.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     part = crud.part.update(db=db, db_obj=part, obj_in=part_in)
     return part
 
@@ -113,12 +109,8 @@ def read_part(
     part = crud.part.get(db=db, id=id)
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
-    if not crud.user.is_superuser(current_user) and (
-        part.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (part.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return part
 
 
@@ -135,11 +127,7 @@ def delete_part(
     part = crud.part.get(db=db, id=id)
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
-    if not crud.user.is_superuser(current_user) and (
-        part.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (part.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     part = crud.part.remove(db=db, id=id)
     return part

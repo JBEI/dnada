@@ -2,7 +2,6 @@ import io
 import os
 
 import pandas as pd
-import pytest
 
 from app.core.pcr_update import distribute_pcr
 

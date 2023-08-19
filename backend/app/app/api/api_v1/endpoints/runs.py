@@ -1,17 +1,14 @@
 from typing import Any, List
 
-from fastapi import (APIRouter, Depends, File, Form, HTTPException,
-                     UploadFile)
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import Json
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
 from app.api.utils.assemblyrun_helper import add_assembly_results_to_db
-from app.api.utils.pcrrun_helper import (add_pcr_results_to_db,
-                                         gather_size_file)
-from app.api.utils.post_automation import (analyze_manual_pcr_results,
-                                           analyze_zag)
+from app.api.utils.pcrrun_helper import add_pcr_results_to_db, gather_size_file
+from app.api.utils.post_automation import analyze_manual_pcr_results, analyze_zag
 from app.api.utils.sequencingrun_helper import add_sequencing_results_to_db
 
 router = APIRouter()
@@ -38,9 +35,7 @@ def create_pcr_run(
     }
     """
     try:
-        peak_files_noasync: list = [
-            peak_file.file for peak_file in peak_files
-        ]
+        peak_files_noasync: list = [peak_file.file for peak_file in peak_files]
         settings["zagColumnSize"] = "EXPECTED_SIZE"
         if settings["isRawZagData"]:
             settings["tolerance"] = float(settings["tolerance"])
@@ -174,9 +169,7 @@ def find_runs(
     """
     Find runs.
     """
-    runs = crud.run.find(
-        db=db, instruction_id=instruction_id, obj_in=search_obj
-    )
+    runs = crud.run.find(db=db, instruction_id=instruction_id, obj_in=search_obj)
     return runs
 
 
@@ -193,12 +186,8 @@ def read_run(
     run = crud.run.get(db=db, id=id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    if not crud.user.is_superuser(current_user) and (
-        run.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (run.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return run
 
 
@@ -216,12 +205,8 @@ def update_run(
     run = crud.run.get(db=db, id=id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    if not crud.user.is_superuser(current_user) and (
-        run.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (run.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     run = crud.run.update(db=db, db_obj=run, obj_in=run_in)
     return run
 
@@ -239,11 +224,7 @@ def delete_run(
     run = crud.run.get(db=db, id=id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    if not crud.user.is_superuser(current_user) and (
-        run.owner_id != current_user.id
-    ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+    if not crud.user.is_superuser(current_user) and (run.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     run = crud.run.remove(db=db, id=id)
     return run

@@ -30,9 +30,7 @@ def process_j5_zip_upload(upload_file: UploadFile) -> schemas.J5Design:
                 plasmid_designs.append(
                     schemas.PlasmidDesign(
                         filename=plasmid_design_filename,
-                        contents=zip_file.read(
-                            plasmid_design_filename
-                        ).decode("utf8"),
+                        contents=zip_file.read(plasmid_design_filename).decode("utf8"),
                     )
                 )
             elif subfile.endswith(".eug"):

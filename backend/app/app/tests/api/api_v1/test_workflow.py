@@ -17,9 +17,7 @@ def test_create_workflow(
     design = create_random_design(
         db, owner_id=owner.id, experiment_id=experiment.id, condensed=True
     )
-    rawdesign = create_random_rawdesign(
-        db, owner_id=owner.id, design_id=design.id
-    )
+    create_random_rawdesign(db, owner_id=owner.id, design_id=design.id)
     data = {
         "experiment_id": experiment.id,
     }

@@ -51,9 +51,7 @@ def test_update_result(db: Session) -> None:
     result = create_random_pcrresult(db)
     polymerase2 = random_lower_string()
     result_update = schemas.PCRResultUpdate(polymerase=polymerase2)
-    result2 = crud.pcrresult.update(
-        db=db, db_obj=result, obj_in=result_update
-    )
+    result2 = crud.pcrresult.update(db=db, db_obj=result, obj_in=result_update)
     assert result2.polymerase == polymerase2
     assert result.id == result2.id
     assert result.result_type == result2.result_type

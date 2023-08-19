@@ -3,19 +3,15 @@ import io
 import json
 from typing import Any, Dict, List, Union
 
-from fastapi import (APIRouter, Depends, File, Form, HTTPException,
-                     UploadFile)
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 
 from app import models, schemas
 from app.api import deps
 from app.api.utils.post_automation import (
-    analyze_qpix, analyze_sequencing_results, analyze_zag,
-    consolidate_pcr_trials_main, create_ngs_submission_form,
-    create_equivolume_assembly, create_pcr_redo,
-    prepare_standalone_equimolar_assembly_and_water,
-    read_construct_dataframe)
+    analyze_qpix, analyze_sequencing_results, analyze_zag, consolidate_pcr_trials_main,
+    create_equivolume_assembly, create_ngs_submission_form, create_pcr_redo,
+    prepare_standalone_equimolar_assembly_and_water, read_construct_dataframe)
 from app.api.utils.results_toolbox import condense_plate_reader_data
 from app.core.colony_pcr import create_colony_pcr_instructions
 from app.core.condense_designs import condense_designs
@@ -32,17 +28,9 @@ async def async_read_csv_file(upload_file: UploadFile) -> str:
     """
     file_read: Union[str, bytes] = await upload_file.read()
     try:
-        return (
-            file_read.decode("utf-8")
-            if isinstance(file_read, bytes)
-            else file_read
-        )
+        return file_read.decode("utf-8") if isinstance(file_read, bytes) else file_read
     except UnicodeDecodeError:  # required in case of windows formatting
-        return (
-            file_read.decode("utf-16")
-            if isinstance(file_read, bytes)
-            else file_read
-        )
+        return file_read.decode("utf-16") if isinstance(file_read, bytes) else file_read
 
 
 @router.post("/parsej5")
@@ -67,8 +55,7 @@ def condense_j5_designs(
     """
     try:
         designs: List[schemas.J5Design] = [
-            process_j5_zip_upload(upload_file)
-            for upload_file in upload_files
+            process_j5_zip_upload(upload_file) for upload_file in upload_files
         ]
         condensed_j5_design: schemas.J5Design = condense_designs(designs)
     finally:
@@ -87,12 +74,8 @@ async def automate_j5(
     """
     results_file = io.BytesIO()
     try:
-        design_json: str = await async_read_csv_file(
-            upload_file=upload_file
-        )
-        j5_design: schemas.J5Design = schemas.J5Design.parse_raw(
-            design_json
-        )
+        design_json: str = await async_read_csv_file(upload_file=upload_file)
+        j5_design: schemas.J5Design = schemas.J5Design.parse_raw(design_json)
         _, results_file = j5_to_echo(
             j5_design=j5_design,
         )
@@ -113,8 +96,7 @@ async def condense_and_automate_j5(
     results_file = io.BytesIO()
     try:
         designs: List[schemas.J5Design] = [
-            process_j5_zip_upload(upload_file)
-            for upload_file in upload_files
+            process_j5_zip_upload(upload_file) for upload_file in upload_files
         ]
         condensed_j5_design: schemas.J5Design = condense_designs(designs)
         _, results_file = j5_to_echo(
@@ -140,9 +122,7 @@ async def standalone_analyze_zag(
     try:
         dict_settings: Dict[str, Any] = json.loads(settings)
         dict_settings["tolerance"] = float(dict_settings["tolerance"])
-        size_file_read: str = await async_read_csv_file(
-            upload_file=size_file
-        )
+        size_file_read: str = await async_read_csv_file(upload_file=size_file)
         results_file = analyze_zag(
             peak_files=[peak_file.file for peak_file in peak_files],
             size_file=io.StringIO(size_file_read),
@@ -169,9 +149,7 @@ async def standalone_create_pcr_redo(
         dict_settings: Dict[str, Any] = json.loads(settings)
         dict_settings["pcrRedoPlateColumn"] = "REDO_PLATE"
         dict_settings["pcrRedoWellColumn"] = "REDO_WELL"
-        pcr_results_read: str = await async_read_csv_file(
-            upload_file=pcr_results_file
-        )
+        pcr_results_read: str = await async_read_csv_file(upload_file=pcr_results_file)
         pcr_redo_instructions = create_pcr_redo(
             pcr_results_file=io.StringIO(pcr_results_read),
             settings=dict_settings,
@@ -217,12 +195,8 @@ async def standalone_create_equivolume_assembly(
         pcr_results_content: str = await async_read_csv_file(
             upload_file=pcr_results_file
         )
-        assembly_content: str = await async_read_csv_file(
-            upload_file=assembly_file
-        )
-        parts_content: str = await async_read_csv_file(
-            upload_file=parts_file
-        )
+        assembly_content: str = await async_read_csv_file(upload_file=assembly_file)
+        parts_content: str = await async_read_csv_file(upload_file=parts_file)
         results_file = create_equivolume_assembly(
             pcr_results_file=io.StringIO(pcr_results_content),
             assembly_worksheet_file=io.StringIO(assembly_content),
@@ -251,12 +225,8 @@ async def standalone_equimolar_assembly_and_water_transfer(
     """
     results_file: io.BytesIO = io.BytesIO()
     try:
-        assembly_read: str = await async_read_csv_file(
-            upload_file=assembly_worksheet
-        )
-        quant_read: str = await async_read_csv_file(
-            upload_file=quant_worksheet
-        )
+        assembly_read: str = await async_read_csv_file(upload_file=assembly_worksheet)
+        quant_read: str = await async_read_csv_file(upload_file=quant_worksheet)
         results_file = prepare_standalone_equimolar_assembly_and_water(
             skinny_assembly=io.StringIO(assembly_read),
             quant_worksheet=io.StringIO(quant_read),
@@ -281,9 +251,7 @@ async def standalone_create_plating_instructions(
     """
     results_file: str = ""
     try:
-        construct_read: str = await async_read_csv_file(
-            upload_file=construct_file
-        )
+        construct_read: str = await async_read_csv_file(upload_file=construct_file)
         results_file = create_plating_instructions(
             plating=read_construct_dataframe(
                 construct_file=io.StringIO(construct_read)
@@ -308,9 +276,7 @@ async def standalone_create_glycerol_stock_worksheet(
     results_file: str = ""
     try:
         qpix_read: str = await async_read_csv_file(upload_file=qpix_file)
-        plating_read: str = await async_read_csv_file(
-            upload_file=plating_file
-        )
+        plating_read: str = await async_read_csv_file(upload_file=plating_file)
         results_file = analyze_qpix(
             qpix_file=io.StringIO(qpix_read),
             plating_file=io.StringIO(plating_read),
@@ -377,13 +343,9 @@ async def standalone_create_ngs_submission_form(
         glycerol_stock_read: str = await async_read_csv_file(
             upload_file=glycerol_stock_file
         )
-        registry_read: str = await async_read_csv_file(
-            upload_file=registry_file
-        )
+        registry_read: str = await async_read_csv_file(upload_file=registry_file)
         username: str = (
-            current_user.email.split("@")[0]
-            if current_user.email
-            else "username"
+            current_user.email.split("@")[0] if current_user.email else "username"
         )
         results_file = create_ngs_submission_form(
             glycerol_stock_file=io.StringIO(glycerol_stock_read),
@@ -407,9 +369,7 @@ async def standalone_create_cherry_picking_instructions(
     """
     results_file: io.BytesIO = io.BytesIO()
     try:
-        sample_read: str = await async_read_csv_file(
-            upload_file=sample_file
-        )
+        sample_read: str = await async_read_csv_file(upload_file=sample_file)
         sequencing_results_read: str = await async_read_csv_file(
             upload_file=sequencing_results_file
         )
@@ -439,9 +399,7 @@ async def standalone_condense_plate_reader_data(
         plate_reader_read: str = await async_read_csv_file(
             upload_file=plate_reader_file
         )
-        plate_map_read: str = await async_read_csv_file(
-            upload_file=plate_map_file
-        )
+        plate_map_read: str = await async_read_csv_file(upload_file=plate_map_file)
         results_file = condense_plate_reader_data(
             plate_reader_file=io.StringIO(plate_reader_read),
             plate_map_file=io.StringIO(plate_map_read),

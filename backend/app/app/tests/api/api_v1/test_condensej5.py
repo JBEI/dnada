@@ -1,5 +1,4 @@
 # Native libraries.
-import os
 
 # Third party libraries.
 from fastapi.testclient import TestClient

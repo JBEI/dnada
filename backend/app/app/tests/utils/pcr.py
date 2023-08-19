@@ -7,8 +7,7 @@ from app.tests.utils import create_random_oligo
 from app.tests.utils.part import create_random_part
 from app.tests.utils.template import create_random_template
 from app.tests.utils.user import create_random_user
-from app.tests.utils.utils import (random_float, random_integer,
-                                   random_lower_string)
+from app.tests.utils.utils import random_float, random_integer, random_lower_string
 
 
 def create_random_pcr(
