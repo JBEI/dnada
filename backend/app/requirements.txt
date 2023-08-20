@@ -20,3 +20,4 @@ scipy==1.11.2
 seaborn==0.12.2
 SQLAlchemy==2.0.20
 tenacity==8.2.3
+typer==0.9.0

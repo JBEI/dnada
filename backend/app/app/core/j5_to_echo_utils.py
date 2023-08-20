@@ -9,6 +9,9 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 from fastapi import HTTPException
+from pandera import check_types
+from pandera.typing import DataFrame
+from app import schemas
 
 OUTPUT_OLIGOS_PLATE_FILENAME = "oligos_plate.csv"
 OUTPUT_TEMPLATES_PLATE_FILENAME = "templates_plate.csv"
@@ -1736,3 +1739,36 @@ def tube_to_plate(clean_df, reaction):
     biomek_frames = [var_df, dest_df]
     biomek_df = pd.concat(biomek_frames, axis=1, join="outer")
     return biomek_df
+
+
+@check_types()
+def gather_construct_worksheet(
+    assembly_worksheet: DataFrame[schemas.AssemblyWorksheetSchema],
+) -> DataFrame[schemas.ConstructWorksheetSchema]:
+    construct_worksheet = (
+        assembly_worksheet.loc[
+            :,
+            [
+                "Number",
+                "Name",
+                "Parts Summary",
+                "Assembly Method",
+                "Destination Plate",
+                "Destination Well",
+            ],
+        ]
+        .groupby("Number")
+        .first()
+        .reset_index()
+        .rename(
+            columns={
+                "Number": "j5_construct_id",
+                "Name": "name",
+                "Parts Summary": "parts",
+                "Assembly Method": "assembly_method",
+                "Destination Plate": "src_plate",
+                "Destination Well": "src_well",
+            }
+        )
+    )
+    return construct_worksheet

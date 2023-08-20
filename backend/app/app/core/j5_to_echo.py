@@ -15,15 +15,16 @@ import pandas as pd
 from Bio import BiopythonWarning, SeqIO
 from pandera import check_types
 from pandera.typing import DataFrame
-from scipy.optimize import OptimizeResult, linprog
 
 import app.api.utils.post_automation as post_automation
 import app.core.j5_to_echo_utils as j5_to_echo_utils
 from app import schemas
-from app.core.config import settings
+from app.core.assembly import create_equimolar_assembly_instructions
 from app.core.pcr_update import distribute_pcr
 from app.core.plating_utils import create_plating_instructions
 from app.core.workflow_readme import workflow_readme
+from app.core.echo import create_echo_instructions
+from app.core import j5
 
 warnings.simplefilter("ignore", BiopythonWarning)
 
@@ -43,7 +44,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
+def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
     """Jupyter notebook in function form
 
     Arguments
@@ -138,7 +139,9 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]
     ] = create_echo_instructions(worksheet=skinny_assembly_df, method="assembly")
     construct_df: DataFrame[
         schemas.ConstructWorksheetSchema
-    ] = gather_construct_worksheet(assembly_worksheet=skinny_assembly_df)
+    ] = j5_to_echo_utils.gather_construct_worksheet(
+        assembly_worksheet=skinny_assembly_df
+    )
     quant_worksheet: DataFrame[schemas.PartsWorksheetSchema] = create_quant_worksheet(
         parts_plate=clean_part_df
     )
@@ -212,9 +215,7 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]
         "README.md": workflow_readme(4),
         "clean_pcr_worksheet.csv": clean_pcr_df.to_csv(index=False),
         "pcr_echo_instructions.csv": pcr_echo_instructions_df.to_csv(index=False),
-        "pcr_biomek_instructions.csv": pcr_biomek_instructions_df.to_csv(
-            line_terminator="\r\n", index=False
-        ),
+        "pcr_biomek_instructions.csv": pcr_biomek_instructions_df.to_csv(index=False),
         "pcr_thermocycler_instructions.csv": (thermocycler.to_csv(index=False)),
     }
     results["Step_5-Analyze_PCRs"] = {
@@ -230,15 +231,11 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]
     results["Step_8-Restriction_Digests"] = {
         "README.md": workflow_readme(8),
         "digests_plate.csv": clean_digest_df.to_csv(index=False),
-        "dpni_biomek_instructions.csv": dpni_biomek_instructions.to_csv(
-            line_terminator="\r\n", index=False
-        ),
+        "dpni_biomek_instructions.csv": dpni_biomek_instructions.to_csv(index=False),
     }
     results["Step_9-PCR_Cleanup"] = {
         "README.md": workflow_readme(9),
-        "bead_biomek_instructions.csv": pcr_bead_instructions_df.to_csv(
-            line_terminator="\r\n", index=False
-        ),
+        "bead_biomek_instructions.csv": pcr_bead_instructions_df.to_csv(index=False),
     }
     results["Step_10-Quantify_Part_Yield"] = {
         "README.md": workflow_readme(10),
@@ -460,7 +457,7 @@ def read_genbank_sequence(genbank: str) -> str:
 
 @check_types()
 def collect_plasmid_sequences(
-    genbanks: List[schemas.PlasmidMap],
+    genbanks: List[j5.PlasmidMap],
 ) -> DataFrame[schemas.BenchlingPlasmidSequences]:
     """Get raw plasmid sequences from design genbanks"""
     if not genbanks:
@@ -995,267 +992,6 @@ def well_to_index(well: str) -> int:
 
 
 @check_types()
-def create_echo_instructions(
-    worksheet: pd.DataFrame, method: str
-) -> DataFrame[schemas.EchoInstructionsSchema]:
-    """Given a worksheet, create echo instructions
-
-    Arguments
-    ---------
-    worksheet : pd.DataFrame
-        A pandas dataframe that contains information
-        about how to set up PCR or assembly rxns
-
-    method : str
-        The type of worksheet given. Can be either
-        'pcr', 'assembly', or 'zag'
-
-    Returns
-    -------
-    echoPlate : pd.DataFrame
-        A pandas dataframe that contains echo
-        instructions
-    """
-    if worksheet.empty:
-        return pd.DataFrame(
-            columns=[
-                "Source Plate Name",
-                "Source Well",
-                "Destination Plate Name",
-                "Destination Well",
-                "Transfer Volume",
-            ]
-        )
-    echoPlate = pd.DataFrame()
-    if method == "pcr":
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet["PRIMER1_PLATE"],
-                worksheet["PRIMER2_PLATE"],
-                worksheet["TEMPLATE_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [
-                worksheet["PRIMER1_WELL"],
-                worksheet["PRIMER2_WELL"],
-                worksheet["TEMPLATE_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [
-                worksheet["OUTPUT_PLATE"],
-                worksheet["OUTPUT_PLATE"],
-                worksheet["OUTPUT_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [
-                worksheet["OUTPUT_WELL"],
-                worksheet["OUTPUT_WELL"],
-                worksheet["OUTPUT_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = pd.concat(
-            [
-                worksheet["PRIMER1_VOLUME"],
-                worksheet["PRIMER2_VOLUME"],
-                worksheet["TEMPLATE_VOLUME"],
-            ],
-            axis=0,
-        )
-    elif method == "assembly":
-        echoPlate = worksheet.loc[
-            :,
-            [
-                "Source Plate",
-                "Source Well",
-                "Destination Plate",
-                "Destination Well",
-            ],
-        ]
-        echoPlate["Transfer Volume"] = 2000  # nL
-        echoPlate = echoPlate.rename(
-            columns={
-                "Source Plate": "Source Plate Name",
-                "Destination Plate": "Destination Plate Name",
-            }
-        )
-    elif method == "equimolar":
-        echoPlate = worksheet.loc[
-            :,
-            [
-                "Source Plate",
-                "Source Well",
-                "Destination Plate",
-                "Destination Well",
-                "Transfer Volume",
-            ],
-        ]
-        echoPlate = echoPlate.rename(
-            columns={
-                "Source Plate": "Source Plate Name",
-                "Destination Plate": "Destination Plate Name",
-            }
-        )
-    elif method == "zag":
-        echoPlate = worksheet.loc[
-            :,
-            ["PARTS_SOURCE_PLATE", "PARTS_WELL", "ZAG_PLATE", "ZAG_WELL"],
-        ].copy()
-        echoPlate["Transfer Volume"] = 500
-        echoPlate.columns = [
-            "Source Plate Name",
-            "Source Well",
-            "Destination Plate Name",
-            "Destination Well",
-            "Transfer Volume",
-        ]
-    elif method == "custom":
-        partColumnHeaders = [
-            column
-            for column in worksheet.columns
-            if (column.startswith("Part(s)"))
-            and (not column.endswith(("ID", "Source Plate", "Well")))
-        ]
-        echoPlate["Source Plate Name"] = pd.concat(
-            [worksheet[f"{part} Source Plate"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [worksheet[f"{part} Well"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [worksheet["Assembly Plate"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [worksheet["Assembly Well"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = 2000  # nL
-    elif method == "quant":
-        echoPlate = worksheet.loc[
-            :,
-            [
-                "PART_PLATE",
-                "PART_WELL",
-                "QUANT_PLATE",
-                "QUANT_WELL",
-                "QUANT_VOLUME",
-            ],
-        ].copy()
-        echoPlate.columns = [
-            "Source Plate Name",
-            "Source Well",
-            "Destination Plate Name",
-            "Destination Well",
-            "Transfer Volume",
-        ]
-    elif method == "redo_pcr":
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet["PRIMER1_PLATE"],
-                worksheet["PRIMER2_PLATE"],
-                worksheet["TEMPLATE_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [
-                worksheet["PRIMER1_WELL"],
-                worksheet["PRIMER2_WELL"],
-                worksheet["TEMPLATE_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [
-                worksheet["REDO_PLATE"],
-                worksheet["REDO_PLATE"],
-                worksheet["REDO_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [
-                worksheet["REDO_WELL"],
-                worksheet["REDO_WELL"],
-                worksheet["REDO_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = pd.concat(
-            [
-                worksheet["PRIMER1_VOLUME"],
-                worksheet["PRIMER2_VOLUME"],
-                worksheet["TEMPLATE_VOLUME"],
-            ],
-            axis=0,
-        )
-    elif method == "colony_pcr":
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet["PRIMER1_PLATE"],
-                worksheet["PRIMER2_PLATE"],
-                worksheet["NGS_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [
-                worksheet["PRIMER1_WELL"],
-                worksheet["PRIMER2_WELL"],
-                worksheet["NGS_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [
-                worksheet["COLONY_PCR_PLATE"],
-                worksheet["COLONY_PCR_PLATE"],
-                worksheet["COLONY_PCR_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [
-                worksheet["COLONY_PCR_WELL"],
-                worksheet["COLONY_PCR_WELL"],
-                worksheet["COLONY_PCR_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = pd.concat(
-            [
-                worksheet["PRIMER1_VOLUME"],
-                worksheet["PRIMER2_VOLUME"],
-                worksheet["NGS_VOLUME"],
-            ],
-            axis=0,
-        )
-    echoPlate = (
-        echoPlate.dropna()
-        .sort_values(
-            [
-                "Source Plate Name",
-                "Destination Plate Name",
-                "Source Well",
-                "Destination Well",
-            ],
-            ascending=[True, True, True, True],
-        )
-        .reset_index(drop=True)
-    )
-    return echoPlate
-
-
-@check_types()
 def create_templates_plates(
     pcr_df: Optional[DataFrame[schemas.MasterJ5PCRs]],
 ) -> DataFrame[schemas.TemplatesPlateSchema]:
@@ -1423,9 +1159,8 @@ def create_oligos_order_form(
 
 def to_excel_bytestring(df: pd.DataFrame, sheet_name: str | None = None) -> bytes:
     output = io.BytesIO()
-    writer = pd.ExcelWriter(output)
-    df.to_excel(writer, sheet_name=sheet_name, index=False)
-    writer.save()
+    with pd.ExcelWriter(output) as writer:
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
     return output.getvalue()
 
 
@@ -1642,7 +1377,7 @@ def create_biomek_pcr_instructions(
                     "MasterMix_reqVol",
                 ],
                 "Value": [
-                    settings.FIRST_SUPERUSER,
+                    "email_address",
                     "PCR",
                     tmpBiomekWells.shape[0],
                     dnaVolume,  # uL DNA
@@ -1672,39 +1407,6 @@ def create_biomek_pcr_instructions(
     return templateDF
 
 
-@check_types()
-def gather_construct_worksheet(
-    assembly_worksheet: DataFrame[schemas.AssemblyWorksheetSchema],
-) -> DataFrame[schemas.ConstructWorksheetSchema]:
-    construct_worksheet = (
-        assembly_worksheet.loc[
-            :,
-            [
-                "Number",
-                "Name",
-                "Parts Summary",
-                "Assembly Method",
-                "Destination Plate",
-                "Destination Well",
-            ],
-        ]
-        .groupby("Number")
-        .first()
-        .reset_index()
-        .rename(
-            columns={
-                "Number": "j5_construct_id",
-                "Name": "name",
-                "Parts Summary": "parts",
-                "Assembly Method": "assembly_method",
-                "Destination Plate": "src_plate",
-                "Destination Well": "src_well",
-            }
-        )
-    )
-    return construct_worksheet
-
-
 def create_quant_worksheet(
     parts_plate: DataFrame[schemas.PartsPlateSchema],
 ) -> DataFrame[schemas.PartsWorksheetSchema]:
@@ -1721,149 +1423,6 @@ def create_quant_worksheet(
     parts_plate["QUANT_VOLUME"] = 1000
     parts_plate["Conc (ng/uL)"] = 50  # Assume each PCR Rxn is 50 ng/uL initially
     return parts_plate
-
-
-def index_to_384_well(index: int) -> str:
-    index = int(index % 384)
-    possible_wells: List[str] = [
-        f"{row}{column}"
-        for row, column in itertools.product("ABCDEFGHIJKLMNOP", range(1, 25))
-    ]
-    index_well_map = {
-        biomek_index: letter_number
-        for letter_number, biomek_index in zip(possible_wells, range(1, 385))
-    }
-    return index_well_map[index]
-
-
-def optimize_equimolar_assembly_rxn(
-    conc: np.ndarray, max_vol: float, max_fmol: float
-) -> np.ndarray:
-    """
-    Arguments
-    ---------
-    conc: np.array
-        Concentrations of each part in a reaction
-
-    max_vol: float
-        Max total volume allowed for reaction (in uL)
-
-    max_fmol: float
-        Max amount of part used for reaction (in fmols)
-    """
-    # Objective: maximize mols used subject to following constraints
-    c: np.ndarray = conc * -1
-
-    # Each part has maximum mol
-    A_ub: np.ndarray = np.diag(c * -1)
-    b_ub: np.ndarray = np.full(c.size, fill_value=max_fmol)
-
-    # Total volume of all parts should be less than max_vol
-    A_ub = np.vstack([A_ub, np.ones(c.size)])
-    b_ub = np.hstack([b_ub, np.array([max_vol])])
-
-    # Each part should use equal mol
-    A_eq: np.ndarray = np.eye(N=c.size - 1, M=c.size, k=1)
-    np.fill_diagonal(A_eq, -1.0)
-    A_eq = A_eq * c
-
-    b_eq: np.ndarray = np.zeros(c.size - 1)
-
-    # Each part volume should be non-negative and under the max volume
-    bounds: Tuple[float, Optional[float]] = (0, max_vol)
-
-    # Perform optimization
-    result: OptimizeResult = linprog(
-        c=c,
-        A_ub=A_ub,
-        b_ub=b_ub,
-        A_eq=A_eq,
-        b_eq=b_eq,
-        bounds=bounds,
-        options={"cholesky": False, "sym_pos": False},
-    )
-    volumes: np.ndarray = np.zeros(c.size)
-    if not result.status:
-        volumes = result.x
-    return volumes
-
-
-def add_water_to_assembly(
-    assembly_worksheet: pd.DataFrame,
-    max_vol: float = 5.0,  # uL
-    volume_column: str = "EQUIMOLAR_VOLUME",
-) -> pd.DataFrame:
-    water_required = (
-        max_vol - assembly_worksheet.groupby("Number").agg({volume_column: "sum"})
-    ).reset_index()
-    water_required["Part Name"] = "water"
-    water_required["Destination Plate"] = water_required["Number"].apply(
-        lambda number: assembly_worksheet.loc[
-            assembly_worksheet["Number"] == number, "Destination Plate"
-        ].values[0]
-    )
-    water_required["Destination Well"] = water_required["Number"].apply(
-        lambda number: assembly_worksheet.loc[
-            assembly_worksheet["Number"] == number, "Destination Well"
-        ].values[0]
-    )
-    water_required = water_required.loc[
-        ~np.isclose(water_required[volume_column], 0.0, atol=1e-3), :
-    ]
-    water_required["Source Plate"] = "water_plate"
-    water_required["Source Well"] = (water_required[volume_column].cumsum() // 45) + 1
-    water_required["Source Plate"] = water_required["Source Well"].apply(
-        lambda well: f"water_plate_{int(well//384)+1}"
-    )
-    water_required["Source Well"] = water_required["Source Well"].apply(
-        index_to_384_well
-    )
-    return assembly_worksheet.append(water_required)
-
-
-def create_equimolar_assembly_instructions(
-    assembly_df: DataFrame[schemas.AssemblyWorksheetSchema],
-    quant_df: DataFrame[schemas.PartsWorksheetSchema],
-    max_fmol: float = 100.0,
-    max_vol: float = 5.0,
-    max_part_percentage: float = 1.0,
-) -> DataFrame[schemas.EquimolarAssemblyWorksheetSchema]:
-    equimolar_worksheet = assembly_df.merge(
-        quant_df,
-        left_on=["Source Plate", "Source Well"],
-        right_on=["PART_PLATE", "PART_WELL"],
-    ).sort_values(["Number", "Part Order"])
-    # Formula from: https://nebiocalculator.neb.com/#!/dsdnaamt
-    equimolar_worksheet["Conc (fmol/uL)"] = (
-        (equimolar_worksheet["Conc (ng/uL)"] * 1e-6)
-        / ((equimolar_worksheet["PART_LENGTH"] * 617.96) + 36.04)
-    ) * 1e12
-    equimolar_worksheet["EQUIMOLAR_VOLUME"] = 0
-
-    for rxn in equimolar_worksheet["Number"].unique():
-        conc: np.ndarray = equimolar_worksheet.loc[
-            equimolar_worksheet["Number"] == rxn, "Conc (fmol/uL)"
-        ].values
-        vol: np.ndarray = optimize_equimolar_assembly_rxn(
-            conc=conc,
-            max_vol=max_vol * max_part_percentage,
-            max_fmol=max_fmol,
-        )
-        equimolar_worksheet.loc[
-            equimolar_worksheet["Number"] == rxn, "EQUIMOLAR_VOLUME"
-        ] = vol
-    equimolar_worksheet["fmol_used"] = (
-        equimolar_worksheet["Conc (fmol/uL)"] * equimolar_worksheet["EQUIMOLAR_VOLUME"]
-    )
-    equimolar_worksheet = add_water_to_assembly(
-        assembly_worksheet=equimolar_worksheet,
-        max_vol=max_vol,
-        volume_column="EQUIMOLAR_VOLUME",
-    )
-    equimolar_worksheet["Transfer Volume"] = (
-        equimolar_worksheet["EQUIMOLAR_VOLUME"] * 1000
-    ).map(int)
-    return equimolar_worksheet
 
 
 @dataclass

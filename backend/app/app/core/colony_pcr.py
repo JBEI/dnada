@@ -8,7 +8,7 @@ from typing import Dict, Tuple
 import pandas as pd
 
 from app.api.utils.post_automation import create_plate_column, create_well_column
-from app.core.j5_to_echo import create_echo_instructions
+from app.core.echo import create_echo_instructions
 from app.core.j5_to_echo_utils import stamp
 
 # From:

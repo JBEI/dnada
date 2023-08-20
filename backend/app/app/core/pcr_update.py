@@ -17,7 +17,6 @@ from pandera import check_types
 from pandera.typing import DataFrame
 
 from app import schemas
-from app.core.config import settings
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -50,7 +49,7 @@ def call_neb_tm_api(
             "seqpairs": primer_sequences,
             "conc": 0.5,
             "prodcode": "q5-0",
-            "email": settings.FIRST_SUPERUSER,
+            "email": "no-reply@lbl.gov",
         }
         tm_response = requests.post(
             "https://tmapi.neb.com/tm/batch",

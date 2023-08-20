@@ -55,7 +55,9 @@ def make_assemblies_skinny(
             )
         )
         tmp["Part Order"] = i
-        skinnyAssemblyInstructions = skinnyAssemblyInstructions.append(tmp)
+        skinnyAssemblyInstructions = pd.concat(
+            [skinnyAssemblyInstructions, tmp], ignore_index=True
+        )
     skinnyAssemblyInstructions = (
         skinnyAssemblyInstructions.dropna()
         .sort_values(["Number", "Part Order"])
@@ -101,7 +103,7 @@ class MasterJ5(BaseModel):
         )
 
     def add_pcr_reactions(self, section_str: str) -> None:
-        df = pd.read_csv(io.StringIO(section_str), skiprows=1, mangle_dupe_cols=True)
+        df = pd.read_csv(io.StringIO(section_str), skiprows=1)
         df = df.rename(
             columns={
                 "ID Number.1": "forward_primer_id",

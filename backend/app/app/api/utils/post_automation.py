@@ -11,12 +11,15 @@ import numpy as np
 import openpyxl
 import pandas as pd
 
-from app.core.j5_to_echo import (create_echo_instructions,
-                                 create_equimolar_assembly_instructions,
-                                 create_plating_instructions,
-                                 gather_construct_worksheet)
-from app.core.j5_to_echo_utils import (convert2WellTo3Well, determineSuccessfulBands,
-                                       stamp)
+from app.core.echo import create_echo_instructions
+from app.core.assembly import create_equimolar_assembly_instructions
+from app.core.plating_utils import create_plating_instructions
+from app.core.j5_to_echo_utils import (
+    convert2WellTo3Well,
+    determineSuccessfulBands,
+    stamp,
+    gather_construct_worksheet,
+)
 
 NGS_TEMPLATE_FILE: str = os.path.join(
     os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))),

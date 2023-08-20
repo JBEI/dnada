@@ -9,14 +9,22 @@ from fastapi.responses import StreamingResponse
 from app import models, schemas
 from app.api import deps
 from app.api.utils.post_automation import (
-    analyze_qpix, analyze_sequencing_results, analyze_zag, consolidate_pcr_trials_main,
-    create_equivolume_assembly, create_ngs_submission_form, create_pcr_redo,
-    prepare_standalone_equimolar_assembly_and_water, read_construct_dataframe)
+    analyze_qpix,
+    analyze_sequencing_results,
+    analyze_zag,
+    consolidate_pcr_trials_main,
+    create_equivolume_assembly,
+    create_ngs_submission_form,
+    create_pcr_redo,
+    prepare_standalone_equimolar_assembly_and_water,
+    read_construct_dataframe,
+)
 from app.api.utils.results_toolbox import condense_plate_reader_data
 from app.core.colony_pcr import create_colony_pcr_instructions
 from app.core.condense_designs import condense_designs
 from app.core.j5_to_echo import create_plating_instructions, j5_to_echo
 from app.core.process_design import process_j5_zip_upload
+from app.core import j5
 
 router = APIRouter()
 
@@ -39,7 +47,7 @@ def parse_j5_zip(*, upload_file: UploadFile = File(...)) -> str:
     Parse J5 Results File to JSON
     """
     try:
-        j5_design: schemas.J5Design = process_j5_zip_upload(upload_file)
+        j5_design: j5.J5Design = process_j5_zip_upload(upload_file)
     finally:
         upload_file.file.close()
     return j5_design.to_json()
@@ -54,10 +62,10 @@ def condense_j5_designs(
     Condense j5 design zip files into single design
     """
     try:
-        designs: List[schemas.J5Design] = [
+        designs: List[j5.J5Design] = [
             process_j5_zip_upload(upload_file) for upload_file in upload_files
         ]
-        condensed_j5_design: schemas.J5Design = condense_designs(designs)
+        condensed_j5_design: j5.J5Design = condense_designs(designs)
     finally:
         for upload_file in upload_files:
             upload_file.file.close()
@@ -75,7 +83,7 @@ async def automate_j5(
     results_file = io.BytesIO()
     try:
         design_json: str = await async_read_csv_file(upload_file=upload_file)
-        j5_design: schemas.J5Design = schemas.J5Design.parse_raw(design_json)
+        j5_design: j5.J5Design = j5.J5Design.parse_raw(design_json)
         _, results_file = j5_to_echo(
             j5_design=j5_design,
         )
@@ -95,10 +103,10 @@ async def condense_and_automate_j5(
     """
     results_file = io.BytesIO()
     try:
-        designs: List[schemas.J5Design] = [
+        designs: List[j5.J5Design] = [
             process_j5_zip_upload(upload_file) for upload_file in upload_files
         ]
-        condensed_j5_design: schemas.J5Design = condense_designs(designs)
+        condensed_j5_design: j5.J5Design = condense_designs(designs)
         _, results_file = j5_to_echo(
             j5_design=condensed_j5_design,
         )
