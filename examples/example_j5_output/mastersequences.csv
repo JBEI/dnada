@@ -1,0 +1,4 @@
+"Sequence File Name","Format","Sequence Name Override","Sequence URL"
+"ImaginaryPlasmidSource.fas","FASTA","ImaginaryPlasmidSource"
+"ImaginaryGenome.fas","FASTA","ImaginaryGenome"
+"ImaginaryMetagenome.fas","FASTA","ImaginaryMetagenome"
