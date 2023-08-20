@@ -25,6 +25,7 @@ from app.core.plating_utils import create_plating_instructions
 from app.core.workflow_readme import workflow_readme
 from app.core.echo import create_echo_instructions
 from app.core import j5
+from app.core import autoprotocols
 
 warnings.simplefilter("ignore", BiopythonWarning)
 
@@ -76,6 +77,11 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         oligos=j5_design.master_j5.oligos,
         size=384,
     )
+    print(
+        autoprotocols.order_oligos(oligos_order_form_384=oligos_order_form_384),
+    )
+    raise ValueError("asdfasdfasdf")
+
     assembly_volume_df: DataFrame[
         schemas.AssemblyVolumeSchema
     ] = create_assembly_volume_df(
@@ -206,6 +212,9 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         "oligos_order_384.csv": oligos_order_form_384.to_csv(index=False),
         "oligos_order_96.xlsx": to_excel_bytestring(oligos_order_form_96, "oligos"),
         "oligos_order_384.xlsx": to_excel_bytestring(oligos_order_form_384, "oligos"),
+        "setup_oligos_plate.json": autoprotocols.order_oligos(
+            oligos_order_form_384=oligos_order_form_384
+        ),
     }
     results["Step_3-Prepare_templates"] = {
         "README.md": workflow_readme(3),
@@ -509,7 +518,7 @@ def flatten_dict(pyobj: dict, keystring: str = "") -> Generator[Any, None, None]
     https://www.geeksforgeeks.org/
     python-convert-nested-dictionary-into-flattened-dictionary/
     """
-    if type(pyobj) is dict:
+    if isinstance(pyobj, dict):
         keystring = keystring + "/" if keystring else keystring
         for k in pyobj:
             yield from flatten_dict(pyobj[k], keystring + k)

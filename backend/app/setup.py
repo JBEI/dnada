@@ -5,7 +5,10 @@ setup(
     version="0.1",
     author="Alberto Nava",
     author_email="alberto_nava@berkeley.edu",
-    description="An application for creating customized synthetic biology automation instructions",
+    description=(
+        "An application for creating customized "
+        "synthetic biology automation instructions"
+    ),
     url="https://github.com/JBEI/dnada",
     packages=find_packages(),
     classifiers=[
@@ -15,4 +18,9 @@ setup(
     ],
     python_requires=">=3.9",
     license="Apache 2.0",
+    entry_points={
+        "console_scripts": [
+            "dnada_cli = app.dnada_cli:cli",
+        ],
+    },
 )

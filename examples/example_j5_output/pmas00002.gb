@@ -1,4 +1,4 @@
-LOCUS       pmas00002                150 bp    dna     circular UNK 
+LOCUS       pmas00002                150 bp    dna     circular UNK
 ACCESSION   pmas00002
 VERSION     pmas00002.1
 KEYWORDS    .
@@ -11,7 +11,7 @@ FEATURES             Location/Qualifiers
                      /label=mas00003_dsmas00001_forward
      misc_feature    101..150
                      /label=ImaginaryProtein2
-ORIGIN      
+ORIGIN
         1 ggacaccctg atggccgtgg ccatcccata cgccctttac accgggtgaa caagtaaaac
        61 ttaaaaggat ctagaacgac gtggtgtcta ataggcttga tggtgtactt cggcaggaca
       121 cacggtagac tgcctactcg ctgccacggt

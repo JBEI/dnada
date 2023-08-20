@@ -345,146 +345,6 @@ def fillPlate(
     return completePlate
 
 
-def updateExistingOligoPlate(existingPlate, newPlate):
-    """Add new oligos to existing plate
-
-    Arguments
-    ---------
-    existingPlate : pandas.DataFrame
-        Old plate that already exists
-
-    newPlate : pandas.DataFrame
-        New plate that need to be made for new assembly
-
-    Returns
-    -------
-    updatedPlate : pandas.DataFrame
-        The old plate with new oligos added
-
-    plateToOrder : pandas.DataFrame
-        The plate with new oligos that do not exist yet
-    """
-    # Left-Excluding Join to get oligos that don't exist yet
-    # See: https://stackoverflow.com/questions/53645882/pandas-merging-101
-    nonExistingOligos = (
-        newPlate.merge(existingPlate, on="LIQUID TYPE", how="left", indicator=True)
-        .query('_merge == "left_only"')
-        .drop("_merge", 1)
-        .sort_values(by="LIQUID TYPE")
-        .loc[:, "LIQUID TYPE"]
-        .reset_index(drop=True)
-    )
-    for oligo in nonExistingOligos.values:
-        existingPlate = existingPlate.append(
-            pd.Series([np.nan, np.nan, oligo, 50], index=existingPlate.columns),
-            ignore_index=True,
-        )
-    existingPlate["PLATE WELL"] = (
-        [
-            f"{row}{column}"
-            for row, column in itertools.product("ABCDEFGHIJKLMNOP", range(1, 25))
-        ]
-        * 20
-    )[: existingPlate.shape[0]]
-    existingPlate["PLATE ID"] = [
-        f"oligos_plate_{index//384 + 1}" for index in range(existingPlate.shape[0])
-    ]
-
-    tmpOligoDF = pd.DataFrame()
-    # tmpOligoDF['OLIGO ID'] = nonExistingOligos.apply(lambda oligo: oligoSynthesisDF.loc[oligoSynthesisDF['Name']==oligo, 'ID Number'].values[0])
-    tmpOligoDF["Name"] = nonExistingOligos
-    tmpOligoDF["Sequence"] = nonExistingOligos.apply(
-        lambda oligo: oligoSynthesisDF.loc[
-            oligoSynthesisDF["Name"] == oligo, "Sequence"
-        ].values[0]
-    )
-    tmpOligoDF["Well Position"] = (
-        [
-            f"{row}{column}"
-            for row, column in itertools.product("ABCDEFGH", range(1, 13))
-        ]
-        * 20
-    )[: tmpOligoDF.shape[0]]
-    return (
-        existingPlate,
-        tmpOligoDF.loc[:, ["Well Position", "Name", "Sequence"]],
-    )
-
-
-def updateExistingTemplatePlate(existingPlate, newPlate):
-    """Add new templates to existing plate
-
-    Arguments
-    ---------
-    existingPlate : pandas.DataFrame
-        Old plate that already exists
-
-    newPlate : pandas.DataFrame
-        New plate that need to be made for new assembly
-
-    Returns
-    -------
-    updatedPlate : pandas.DataFrame
-        The old plate with new templates added
-
-    piecesToAdd : pandas.DataFrame
-        The pieces needed in old plate
-    """
-    # Left-Excluding Join to get oligos that don't exist yet
-    # See: https://stackoverflow.com/questions/53645882/pandas-merging-101
-    nonExistingParts = (
-        newPlate.merge(existingPlate, on="LIQUID TYPE", how="left", indicator=True)
-        .query('_merge == "left_only"')
-        .drop("_merge", 1)
-        .sort_values(by="LIQUID TYPE")
-        .loc[:, "LIQUID TYPE"]
-        .reset_index(drop=True)
-    )
-    for part in nonExistingParts.values:
-        existingPlate = existingPlate.append(
-            pd.Series(
-                ["templates_plate", np.nan, part, 55],
-                index=existingPlate.columns,
-            ),
-            ignore_index=True,
-        )
-    existingPlate["PLATE WELL"] = [
-        f"{row}{column}"
-        for row, column in itertools.product(
-            "ACEGIKMOBDFHJLNP",
-            [
-                1,
-                3,
-                5,
-                7,
-                9,
-                11,
-                13,
-                15,
-                17,
-                19,
-                21,
-                23,
-                2,
-                4,
-                6,
-                8,
-                10,
-                12,
-                14,
-                16,
-                18,
-                20,
-                22,
-                24,
-            ],
-        )
-    ][: existingPlate.shape[0]]
-
-    tmpDF = existingPlate.loc[existingPlate["LIQUID TYPE"].isin(nonExistingParts), :]
-    return (existingPlate, tmpDF)
-
-
 def unstamp(destWell):
     """Unstamp a dest well from 384-well plate to a 96-well plate
 
@@ -1515,8 +1375,10 @@ def water_transfer(assembly_df, mm_conc, final_assembly_volume):
     j = 0
     destination = assembly_df["Destination Well"]
     volume = assembly_df["Transfer Volume"]
-    # Filling a list of wells for unique assembly destinaiton wells, and calculating volume of parts in those wells
-    # List of wells is as long as the number of source wells, then reduced to actual amount of destination wells later
+    # Filling a list of wells for unique assembly destinaiton wells, and
+    # calculating volume of parts in those wells
+    # List of wells is as long as the number of source wells, then reduced
+    # to actual amount of destination wells later
     for i in range(len(assembly_df)):
         if destination[i] not in wells:
             wells[j] = destination[i]
@@ -1525,11 +1387,13 @@ def water_transfer(assembly_df, mm_conc, final_assembly_volume):
         else:
             wells[j] = "remove"
             j += 1
-    # Adding unique destination wells to dataframe as wells for needing water transfer
+    # Adding unique destination wells to dataframe as wells for needing water
+    # transfer
     # Also adding volumes of parts in those wells
     water["Destination Well"] = wells
     water["Parts Volume"] = aliquot
-    # Determination of water to add to each destination well based on user input, in units of nL
+    # Determination of water to add to each destination well based on user
+    # input, in units of nL
     water_for_assembly = (final_assembly_volume * 1000) / mm_conc
     water["Transfer Volume"] = water_for_assembly - water["Parts Volume"]
     i = 0
@@ -1538,11 +1402,13 @@ def water_transfer(assembly_df, mm_conc, final_assembly_volume):
     for i in range(len(water)):
         if deletion[i] == water_for_assembly:
             remove.append(i)
-    # Removing wells with no water to be added, and temporary columns used in water volume calculations
+    # Removing wells with no water to be added, and temporary columns used
+    # in water volume calculations
     water.drop(remove, inplace=True)
     water.drop(columns="Parts Volume", inplace=True)
     water_to_transfer = water["Transfer Volume"].values.tolist()
-    # Reducing transfer volume to zero if parts volume greater than final assembly volume
+    # Reducing transfer volume to zero if parts volume greater than final
+    # assembly volume
     for i in range(len(water_to_transfer)):
         if water_to_transfer[i] <= 0:
             water_to_transfer[i] = 0
@@ -1553,8 +1419,10 @@ def water_transfer(assembly_df, mm_conc, final_assembly_volume):
     for i in range(len(water_to_transfer)):
         total_water = total_water + water_to_transfer[i]
 
-    # Now determining how many wells are necessary to fill destination wells with water
-    # Assigning each water well 40 uL to use, assuming 65 uL start and end is 20 uL
+    # Now determining how many wells are necessary to fill destination wells
+    # with water
+    # Assigning each water well 40 uL to use, assuming 65 uL start and end
+    # is 20 uL
     class water_well:
         well_name = ""
         well_volume = 40000
@@ -1648,7 +1516,6 @@ def water_transfer(assembly_df, mm_conc, final_assembly_volume):
     to_join = [assembly_df, water]
     assembly_water = pd.concat(to_join)
     assembly_water = assembly_water.reset_index(drop=True)
-    # assembly_water_output = assembly_water.to_csv(r'assembly_water_echo_instructions_equimolar.csv', index = False, header = True)
     return assembly_water
 
 

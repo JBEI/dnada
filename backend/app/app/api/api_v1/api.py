@@ -1,9 +1,26 @@
 from fastapi import APIRouter
 
-from app.api.api_v1.endpoints import (assemblys, banner, constructs, designs, digests,
-                                      experiments, instructions, login, meta, oligos,
-                                      parts, pcrs, runs, standalone, synths, users,
-                                      utils, validate, workflow)
+from app.api.api_v1.endpoints import (
+    assemblys,
+    banner,
+    constructs,
+    designs,
+    digests,
+    experiments,
+    instructions,
+    login,
+    meta,
+    oligos,
+    parts,
+    pcrs,
+    runs,
+    standalone,
+    synths,
+    users,
+    utils,
+    validate,
+    workflow,
+)
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])

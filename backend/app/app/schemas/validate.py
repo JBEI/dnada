@@ -31,7 +31,7 @@ class ValidationResponse(BaseModel):
     text: str
 
 
-class RegistryPlasmidSchema(pa.SchemaModel):
+class RegistryPlasmidSchema(pa.DataFrameModel):
     Principal_Investigator: Series[str] = pa.Field(alias="Principal Investigator")
     Principal_Investigator_Email: Series[str] = pa.Field(
         alias="Principal Investigator Email"
@@ -74,7 +74,7 @@ class RegistryPlasmidSchema(pa.SchemaModel):
         coerce = True
 
 
-class PeakTableSchema(pa.SchemaModel):
+class PeakTableSchema(pa.DataFrameModel):
     Well: Series[str] = pa.Field()
     Sample_ID: Series[str] = pa.Field(alias="Sample ID")
     Peak_ID: Series[int] = pa.Field(alias="Peak ID", ge=1)
@@ -96,7 +96,7 @@ class PeakTableSchema(pa.SchemaModel):
         coerce = True
 
 
-class RegistryWorksheetSchema(pa.SchemaModel):
+class RegistryWorksheetSchema(pa.DataFrameModel):
     Name: Series[str] = pa.Field()
     Part_ID: Series[str] = pa.Field()
 
@@ -105,7 +105,7 @@ class RegistryWorksheetSchema(pa.SchemaModel):
         coerce = True
 
 
-class SynthsPlateSchema(pa.SchemaModel):
+class SynthsPlateSchema(pa.DataFrameModel):
     PLATE_ID: Series[str] = pa.Field(alias="PLATE ID")
     PLATE_WELL: Series[str] = pa.Field(alias="PLATE WELL")
     LIQUID_TYPE: Series[str] = pa.Field(alias="LIQUID TYPE")
@@ -117,7 +117,7 @@ class SynthsPlateSchema(pa.SchemaModel):
         coerce = True
 
 
-class OligosPlateSchema(pa.SchemaModel):
+class OligosPlateSchema(pa.DataFrameModel):
     PLATE_ID: Series[str] = pa.Field(alias="PLATE ID")
     PLATE_WELL: Series[str] = pa.Field(alias="PLATE WELL")
     LIQUID_TYPE: Series[str] = pa.Field(alias="LIQUID TYPE")
@@ -128,7 +128,7 @@ class OligosPlateSchema(pa.SchemaModel):
         coerce = True
 
 
-class OligosOrderSchema(pa.SchemaModel):
+class OligosOrderSchema(pa.DataFrameModel):
     Plate: Series[str] = pa.Field()
     Well_Position: Series[str] = pa.Field(alias="Well Position")
     Name: Series[str] = pa.Field()
@@ -140,7 +140,7 @@ class OligosOrderSchema(pa.SchemaModel):
         coerce = True
 
 
-class TemplatesPlateSchema(pa.SchemaModel):
+class TemplatesPlateSchema(pa.DataFrameModel):
     PLATE_ID: Series[str] = pa.Field(alias="PLATE ID")
     PLATE_WELL: Series[str] = pa.Field(alias="PLATE WELL")
     LIQUID_TYPE: Series[str] = pa.Field(alias="LIQUID TYPE")
@@ -151,7 +151,7 @@ class TemplatesPlateSchema(pa.SchemaModel):
         coerce = True
 
 
-class EchoInstructionsSchema(pa.SchemaModel):
+class EchoInstructionsSchema(pa.DataFrameModel):
     Source_Plate_Name: Series[str] = pa.Field(alias="Source Plate Name")
     Source_Well: Series[str] = pa.Field(alias="Source Well")
     Destination_Plate_Name: Series[str] = pa.Field(alias="Destination Plate Name")
@@ -163,7 +163,7 @@ class EchoInstructionsSchema(pa.SchemaModel):
         coerce = True
 
 
-class PCRInstructionsSchema(pa.SchemaModel):
+class PCRInstructionsSchema(pa.DataFrameModel):
     REACTION_NUMBER: Series[int] = pa.Field(ge=0)
     TEMPLATE_NAME: Series[str] = pa.Field()
     TEMPLATE_PLATE: Series[str] = pa.Field()
@@ -199,7 +199,7 @@ class PCRWorksheetSchema(PCRInstructionsSchema):
     ZAG_WELL: Series[str] = pa.Field()
 
 
-class PCRThermocyclerSchema(pa.SchemaModel):
+class PCRThermocyclerSchema(pa.DataFrameModel):
     BLOCK_ID: Series[str] = pa.Field(alias="BLOCK ID")
     BLOCK_ZONE: Series[str] = pa.Field(alias="BLOCK ZONE")
     BLOCK_ZONE_ANNEALING_TEMP: Series[str] = pa.Field()
@@ -212,7 +212,7 @@ class PCRThermocyclerSchema(pa.SchemaModel):
         coerce = True
 
 
-class DigestsPlateSchema(pa.SchemaModel):
+class DigestsPlateSchema(pa.DataFrameModel):
     REACTION_NUMBER: Series[int] = pa.Field(ge=0)
     SEQUENCE_SOURCE: Series[str] = pa.Field()
     SEQUENCE_LENGTH: Series[int] = pa.Field(gt=0)
@@ -234,7 +234,7 @@ class DigestsWorksheetSchema(DigestsPlateSchema):
         coerce = True
 
 
-class PartsPlateSchema(pa.SchemaModel):
+class PartsPlateSchema(pa.DataFrameModel):
     PART_PLATE: Series[str] = pa.Field()
     PART_WELL: Series[str] = pa.Field()
     PART_ID: Series[int] = pa.Field(ge=0)
@@ -257,7 +257,7 @@ class PartsWorksheetSchema(PartsPlateSchema):
     CONCENTRATION: Series[float] = pa.Field(alias="Conc (ng/uL)", gt=0)
 
 
-class ConstructWorksheetSchema(pa.SchemaModel):
+class ConstructWorksheetSchema(pa.DataFrameModel):
     j5_construct_id: Series[int] = pa.Field(ge=0)
     name: Series[str] = pa.Field()
     parts: Series[str] = pa.Field()
@@ -275,7 +275,7 @@ class PlatingInstructionsSchema(ConstructWorksheetSchema):
     QWELL: Series[str] = pa.Field()
 
 
-class MasterJ5Digests(pa.SchemaModel):
+class MasterJ5Digests(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Sequence_Source: Series[str] = pa.Field(alias="Sequence Source", unique=True)
     Length: Series[int] = pa.Field(gt=0)
@@ -286,7 +286,7 @@ class MasterJ5Digests(pa.SchemaModel):
         coerce = True
 
 
-class MasterJ5Oligos(pa.SchemaModel):
+class MasterJ5Oligos(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Name: Series[str] = pa.Field(unique=True)
     Length: Series[int] = pa.Field(gt=0)
@@ -301,7 +301,7 @@ class MasterJ5Oligos(pa.SchemaModel):
         coerce = True
 
 
-class MasterJ5Synthesis(pa.SchemaModel):
+class MasterJ5Synthesis(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Name: Series[str] = pa.Field(unique=True)
     Length: Series[int] = pa.Field(gt=0)
@@ -313,7 +313,7 @@ class MasterJ5Synthesis(pa.SchemaModel):
         coerce = True
 
 
-class MasterJ5PartSources(pa.SchemaModel):
+class MasterJ5PartSources(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Name: Series[str] = pa.Field(unique=True)
     Source_Plasmid: Series[str] = pa.Field(alias="Source Plasmid")
@@ -329,7 +329,7 @@ class MasterJ5PartSources(pa.SchemaModel):
         coerce = True
 
 
-class MasterJ5PCRs(pa.SchemaModel):
+class MasterJ5PCRs(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Primary_Template: Series[str] = pa.Field(alias="Primary Template")
     Alternate_Template: Series[str] = pa.Field(
@@ -352,7 +352,7 @@ class MasterJ5PCRs(pa.SchemaModel):
         coerce = True
 
 
-class MasterJ5Parts(pa.SchemaModel):
+class MasterJ5Parts(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Method: Series[str] = pa.Field(isin=["SLIC/Gibson/CPEC", "Golden-gate"])
     Type: Series[str] = pa.Field(
@@ -415,7 +415,7 @@ class AssemblyPartsSchema(MasterJ5Parts):
     FIRST_PART_WELL: Series[str] = pa.Field()
 
 
-class MasterJ5Assemblies(pa.SchemaModel):
+class MasterJ5Assemblies(pa.DataFrameModel):
     Number: Series[int] = pa.Field(ge=0, unique=True)
     Name: Series[str] = pa.Field(unique=True)
     Assembly_Method: Series[str] = pa.Field(
@@ -437,7 +437,7 @@ class MasterJ5Assemblies(pa.SchemaModel):
         coerce = True
 
 
-class MasterJ5SkinnyAssemblies(pa.SchemaModel):
+class MasterJ5SkinnyAssemblies(pa.DataFrameModel):
     Number: Series[int] = pa.Field(ge=0)
     Name: Series[str] = pa.Field()
     Assembly_Method: Series[str] = pa.Field(
@@ -452,7 +452,7 @@ class MasterJ5SkinnyAssemblies(pa.SchemaModel):
         coerce = True
 
 
-class AssemblyVolumeSchema(pa.SchemaModel):
+class AssemblyVolumeSchema(pa.DataFrameModel):
     PART_ID: Series[int] = pa.Field(ge=0, unique=True)
     PART_NAME: Series[str] = pa.Field()
     TYPE: Series[str] = pa.Field(
@@ -495,7 +495,7 @@ class EquimolarAssemblyWorksheetSchema(AssemblyWorksheetSchema, PartsWorksheetSc
         coerce = True
 
 
-class BenchlingPlasmidSequences(pa.SchemaModel):
+class BenchlingPlasmidSequences(pa.DataFrameModel):
     Name: Series[str] = pa.Field(unique=True)
     Bases: Series[str] = pa.Field(is_dna_sequence=())
     Type: Series[str] = pa.Field(isin=["cloning", "expression"])
@@ -505,7 +505,7 @@ class BenchlingPlasmidSequences(pa.SchemaModel):
         coerce = True
 
 
-class BenchlingAASequences(pa.SchemaModel):
+class BenchlingAASequences(pa.DataFrameModel):
     Name: Series[str] = pa.Field(unique=True)
     Bases: Series[str] = pa.Field(is_aa_sequence=())
     Type: Series[str] = pa.Field(
@@ -527,12 +527,12 @@ class BenchlingAASequences(pa.SchemaModel):
     )
 
 
-class BenchlingGeneSequences(pa.SchemaModel):
+class BenchlingGeneSequences(pa.DataFrameModel):
     Name: Series[str] = pa.Field(unique=True)
     Bases: Series[str] = pa.Field(is_dna_sequence=())
 
 
-pandera_schema = Type[pa.SchemaModel]
+pandera_schema = Type[pa.DataFrameModel]
 
 VALIDATION_SCHEMAS: Dict[str, pandera_schema] = {
     "registryplasmid": RegistryPlasmidSchema,

@@ -9,13 +9,18 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.api import deps
-from app.api.utils.db import (add_assembly_instructions_to_db,
-                              add_consolidate_pcr_instructions_to_db,
-                              add_pcr_redo_instructions_to_db,
-                              add_plating_instructions_to_db)
-from app.api.utils.post_automation import (consolidate_pcr_trials_main,
-                                           create_equivolume_assembly, create_pcr_redo,
-                                           read_construct_dataframe)
+from app.api.utils.db import (
+    add_assembly_instructions_to_db,
+    add_consolidate_pcr_instructions_to_db,
+    add_pcr_redo_instructions_to_db,
+    add_plating_instructions_to_db,
+)
+from app.api.utils.post_automation import (
+    consolidate_pcr_trials_main,
+    create_equivolume_assembly,
+    create_pcr_redo,
+    read_construct_dataframe,
+)
 from app.core.j5_to_echo import create_plating_instructions
 
 router = APIRouter()

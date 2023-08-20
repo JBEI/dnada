@@ -17,7 +17,8 @@ def condense_and_automate_j5(
         "automation_instructions.zip", help="Path to save the output file."
     ),
 ) -> None:
-    """Condense j5 design zip files into single design then create customized automation instructions for J5 Design."""
+    """Condense j5 design zip files into single design then create
+    customized automation instructions for J5 Design."""
     designs: list[j5.J5Design] = []
     for file in files:
         with file.open("rb") as f:

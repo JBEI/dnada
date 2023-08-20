@@ -458,14 +458,14 @@ Prepare and submit a sample submission form for NGS services
 
 # Step 16 - Prepare and submit NGS samples
 
-Prepare samples by boiling 20 uL of each overnight culture for 
+Prepare samples by boiling 20 uL of each overnight culture for
 10 minutes in 20 uL of water.
 """,
     17: """
 
 # Step 17 - Analyze NGS results
 
-Follow the insructions given by your NGS service provider 
+Follow the insructions given by your NGS service provider
 to analyze your data. The results should be a csv containing
 construct IDs and whether or not they were successful.
 """,

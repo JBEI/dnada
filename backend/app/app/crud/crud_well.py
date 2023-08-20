@@ -5,8 +5,15 @@ from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.crud.base import CRUDBaseWell
-from app.models.well import (DigestWell, OligoOrder96Well, OligoWell, PartWell, PCRWell,
-                             SynthWell, TemplateWell)
+from app.models.well import (
+    DigestWell,
+    OligoOrder96Well,
+    OligoWell,
+    PartWell,
+    PCRWell,
+    SynthWell,
+    TemplateWell,
+)
 
 
 class CRUDOligoWell(

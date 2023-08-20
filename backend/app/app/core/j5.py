@@ -187,7 +187,8 @@ class MasterJ5(BaseModel):
             else:
                 unexpected_title = section_str.split("\n")[0]
                 raise KeyError(
-                    f'Unexpected section with title "{unexpected_title}" : {section_str}'
+                    f"Unexpected section with "
+                    f'title "{unexpected_title}" : {section_str}'
                 )
         logging.debug("Finished parsing J5 combinatorial csv")
         return master_j5

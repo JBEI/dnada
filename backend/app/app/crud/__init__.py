@@ -16,8 +16,15 @@ from .crud_run import run
 from .crud_synth import synth
 from .crud_template import template
 from .crud_user import user
-from .crud_well import (digestwell, oligoorder96well, oligowell, partwell, pcrwell,
-                        synthwell, templatewell)
+from .crud_well import (
+    digestwell,
+    oligoorder96well,
+    oligowell,
+    partwell,
+    pcrwell,
+    synthwell,
+    templatewell,
+)
 from .crud_workflow import workflow
 from .crud_workflowstep import workflowstep
 

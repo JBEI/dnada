@@ -1,8 +1,13 @@
 from app.crud.base import CRUDBaseResult
 from app.db.base import AssemblyResult, PCRResult, SequencingResult
-from app.schemas import (AssemblyResultCreate, AssemblyResultUpdate, PCRResultCreate,
-                         PCRResultUpdate, SequencingResultCreate,
-                         SequencingResultUpdate)
+from app.schemas import (
+    AssemblyResultCreate,
+    AssemblyResultUpdate,
+    PCRResultCreate,
+    PCRResultUpdate,
+    SequencingResultCreate,
+    SequencingResultUpdate,
+)
 
 
 class CRUDPCRResult(CRUDBaseResult[PCRResult, PCRResultCreate, PCRResultUpdate]):

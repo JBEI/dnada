@@ -4,10 +4,16 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.api.utils.db import process_design_to_db, process_workflow_to_db
-from app.tests.testdata.testdata import (EXTRACTED_MASTER_J5_PATH, MASTER_J5_PATH,
-                                         RESULTS_DICT_PATH)
-from app.tests.utils import (create_random_design, create_random_user,
-                             create_random_workflow)
+from app.tests.testdata.testdata import (
+    EXTRACTED_MASTER_J5_PATH,
+    MASTER_J5_PATH,
+    RESULTS_DICT_PATH,
+)
+from app.tests.utils import (
+    create_random_design,
+    create_random_user,
+    create_random_workflow,
+)
 
 
 def test_master_j5_parse_csv() -> None:

@@ -17,8 +17,16 @@ from .run import Run
 from .synth import Synth
 from .template import Template
 from .user import User
-from .well import (DigestWell, OligoOrder96Well, OligoWell, PartWell, PCRWell,
-                   SynthWell, TemplateWell, Well)
+from .well import (
+    DigestWell,
+    OligoOrder96Well,
+    OligoWell,
+    PartWell,
+    PCRWell,
+    SynthWell,
+    TemplateWell,
+    Well,
+)
 from .workflow import Workflow
 from .workflowstep import WorkflowStep
 

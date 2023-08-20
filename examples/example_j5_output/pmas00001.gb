@@ -1,4 +1,4 @@
-LOCUS       pmas00001                150 bp    dna     circular UNK 
+LOCUS       pmas00001                150 bp    dna     circular UNK
 ACCESSION   pmas00001
 VERSION     pmas00001.1
 KEYWORDS    .
@@ -11,7 +11,7 @@ FEATURES             Location/Qualifiers
                      /label=ImaginaryProtein1
      primer_bind     complement(130..26)
                      /label=mas00002_(ImaginaryProtein1)_reverse
-ORIGIN      
+ORIGIN
         1 ggacaccctg atggccgtgg ccatcccata cgccctttac accgggtgaa caagtaaaac
        61 ttaaaaggat ctagaacgac gtggtgtcta ataggcttga tgctcttacg gattgcgtga
       121 ccaaatgtac ccattcggag acggtggtgg

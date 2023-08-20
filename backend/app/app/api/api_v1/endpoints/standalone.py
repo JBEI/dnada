@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Union
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app import models, schemas
+from app import models
 from app.api import deps
 from app.api.utils.post_automation import (
     analyze_qpix,
