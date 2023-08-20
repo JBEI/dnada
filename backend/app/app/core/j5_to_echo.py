@@ -77,10 +77,6 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         oligos=j5_design.master_j5.oligos,
         size=384,
     )
-    print(
-        autoprotocols.order_oligos(oligos_order_form_384=oligos_order_form_384),
-    )
-    raise ValueError("asdfasdfasdf")
 
     assembly_volume_df: DataFrame[
         schemas.AssemblyVolumeSchema
@@ -204,6 +200,9 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
     results["Step_1-Order_genes"] = {
         "README.md": workflow_readme(1),
         "synths_plate.csv": synths_plate_df.to_csv(index=False),
+        "setup_synths_plate.json": autoprotocols.order_genes(
+            synths_order_form_384=synths_plate_df
+        ),
     }
     results["Step_2-Order_oligos"] = {
         "README.md": workflow_readme(2),
@@ -219,6 +218,9 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
     results["Step_3-Prepare_templates"] = {
         "README.md": workflow_readme(3),
         "templates_plate.csv": template_plate_df.to_csv(index=False),
+        "setup_templates_plate.json": autoprotocols.setup_templates_plate(
+            templates_plate=template_plate_df, synths_plate=synths_plate_df
+        ),
     }
     results["Step_4-Perform_PCRs"] = {
         "README.md": workflow_readme(4),
