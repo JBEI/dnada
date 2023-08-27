@@ -110,6 +110,7 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         cleanDigestDF=digest_instructions, cleanPCRDF=clean_pcr_df
     )
     dpni_biomek_instructions = create_dpni_instructions(clean_pcr_df=clean_pcr_df)
+
     zag_echo_instructions_df: DataFrame[
         schemas.EchoInstructionsSchema
     ] = create_echo_instructions(worksheet=clean_pcr_df, method="zag")
@@ -228,10 +229,17 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         "pcr_echo_instructions.csv": pcr_echo_instructions_df.to_csv(index=False),
         "pcr_biomek_instructions.csv": pcr_biomek_instructions_df.to_csv(index=False),
         "pcr_thermocycler_instructions.csv": (thermocycler.to_csv(index=False)),
+        "perform_pcrs.json": autoprotocols.perform_pcrs(
+            echo_instructions=pcr_echo_instructions_df,
+            thermocycler_instructions=thermocycler,
+        ),
     }
     results["Step_5-Analyze_PCRs"] = {
         "README.md": workflow_readme(5),
         "zag_echo_instructions.csv": zag_echo_instructions_df.to_csv(index=False),
+        "analyze_pcrs.json": autoprotocols.analyze_pcrs(
+            pcr_worksheet=clean_pcr_df,
+        ),
     }
     results["Step_6-Redo_PCRs"] = {
         "README.md": workflow_readme(6),
@@ -243,16 +251,27 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         "README.md": workflow_readme(8),
         "digests_plate.csv": clean_digest_df.to_csv(index=False),
         "dpni_biomek_instructions.csv": dpni_biomek_instructions.to_csv(index=False),
+        "perform_digestions.json": autoprotocols.perform_digestions(
+            pcr_worksheet=clean_pcr_df,
+            digest_worksheet=clean_digest_df,
+        ),
     }
     results["Step_9-PCR_Cleanup"] = {
         "README.md": workflow_readme(9),
         "bead_biomek_instructions.csv": pcr_bead_instructions_df.to_csv(index=False),
+        "perform_cleanups.json": autoprotocols.perform_cleanups(
+            pcr_worksheet=clean_pcr_df,
+            digest_worksheet=clean_digest_df,
+        ),
     }
     results["Step_10-Quantify_Part_Yield"] = {
         "README.md": workflow_readme(10),
         "parts_plate.csv": clean_part_df.to_csv(index=False),
         "quant_worksheet.csv": quant_worksheet.to_csv(index=False),
         "quant_echo_instructions.csv": quant_echo_instructions.to_csv(index=False),
+        "quantify_parts.json": autoprotocols.organize_and_quantify_fragments(
+            quant_worksheet=quant_worksheet
+        ),
     }
     results["Step_11-Perform_Assembly"] = {
         "README.md": workflow_readme(11),
