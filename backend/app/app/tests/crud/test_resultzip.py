@@ -38,9 +38,7 @@ def test_update_resultzip(db: Session) -> None:
     resultzip = create_random_resultzip(db)
     data2 = random_bytestr()
     resultzip_update = schemas.ResultZipUpdate(data=data2)
-    resultzip2 = crud.resultzip.update(
-        db=db, db_obj=resultzip, obj_in=resultzip_update
-    )
+    resultzip2 = crud.resultzip.update(db=db, db_obj=resultzip, obj_in=resultzip_update)
     assert resultzip.id == resultzip2.id
     assert resultzip2.data == data2
     assert resultzip.owner_id == resultzip2.owner_id

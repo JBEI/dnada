@@ -55,7 +55,5 @@ def gather_size_file(db: Session, instruction_id: int) -> io.StringIO:
         "EXPECTED_SIZE"
         "sample_id" = PCRWell.id
     """
-    size_file = io.StringIO(
-        crud.instruction.get(db=db, id=instruction_id).data
-    )
+    size_file = io.StringIO(crud.instruction.get(db=db, id=instruction_id).data)
     return size_file

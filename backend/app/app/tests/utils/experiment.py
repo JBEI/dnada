@@ -15,9 +15,5 @@ def create_random_experiment(
         owner_id = user.id
     name = random_lower_string()
     description = random_lower_string()
-    experiment_in = schemas.ExperimentCreate(
-        name=name, description=description
-    )
-    return crud.experiment.create(
-        db=db, obj_in=experiment_in, owner_id=owner_id
-    )
+    experiment_in = schemas.ExperimentCreate(name=name, description=description)
+    return crud.experiment.create(db=db, obj_in=experiment_in, owner_id=owner_id)

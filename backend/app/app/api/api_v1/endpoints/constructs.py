@@ -39,9 +39,7 @@ def find_constructs(
     """
     Find constructs.
     """
-    constructs = crud.construct.find(
-        db=db, design_id=design_id, obj_in=search_obj
-    )
+    constructs = crud.construct.find(db=db, design_id=design_id, obj_in=search_obj)
     return constructs
 
 
@@ -77,9 +75,7 @@ def read_construct(
     if not crud.user.is_superuser(current_user) and (
         construct.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return construct
 
 
@@ -116,12 +112,8 @@ def update_construct(
     if not crud.user.is_superuser(current_user) and (
         construct.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
-    construct = crud.construct.update(
-        db=db, db_obj=construct, obj_in=construct_in
-    )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    construct = crud.construct.update(db=db, db_obj=construct, obj_in=construct_in)
     return construct
 
 
@@ -141,8 +133,6 @@ def delete_construct(
     if not crud.user.is_superuser(current_user) and (
         construct.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail=("Not enough permissions")
-        )
+        raise HTTPException(status_code=400, detail=("Not enough permissions"))
     construct = crud.construct.remove(db=db, id=id)
     return construct

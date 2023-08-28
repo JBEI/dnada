@@ -1,0 +1,70 @@
+"SLIC/Gibson/CPEC j5 v3.6.3 assembly 8/19/2023"
+"Please cite: Hillson, N.J., Rosengarten, R.D., and Keasling J.D. (2012) j5 DNA Assembly Design Automation Software. ACS Synthetic Biology 1 (1), 14-21. DOI: 10.1021/sb2000116"
+"Warning: specified minimum dna synthesis length (25) is less than the specified minimum pcr product length (50). Setting the minimum dna synthesis length to the minimum pcr product length..."
+
+"Assembly Parameters:"
+MASTEROLIGONUMBEROFDIGITS,MASTERPLASMIDNUMBEROFDIGITS,GIBSONOVERLAPBPS,GIBSONOVERLAPMINTM,GIBSONOVERLAPMAXTM,MAXIMUMOLIGOLENGTHBPS,MINIMUMFRAGMENTSIZEGIBSONBPS,GOLDENGATEOVERHANGBPS,GOLDENGATERECOGNITIONSEQ,GOLDENGATETERMINIEXTRASEQ,GOLDENGATETERMINIEXTRASEQDNASYNTHESISALT,MAXIMUM_IDENTITIES_GOLDEN_GATE_OVERHANGS_COMPATIBLE,OLIGOSYNTHESISCOSTPERBPUSD,OLIGOPAGEPURIFICATIONCOSTPERPIECEUSD,OLIGOMAXLENGTHNOPAGEPURIFICATIONREQUIREDBPS,MINIMUMPCRPRODUCTBPS,DIRECTSYNTHESISCOSTPERBPUSD,DIRECTSYNTHESISMINIUMUMCOSTPERPIECEUSD,PRIMER_GC_CLAMP,PRIMER_MIN_SIZE,PRIMER_MAX_SIZE,DEFAULT_PURE_PRIMER_LENGTH_BPS,PRIMER_MIN_TM,PRIMER_MAX_TM,PRIMER_MAX_DIFF_TM,PRIMER_MAX_SELF_ANY_TH,PRIMER_MAX_SELF_END_TH,PRIMER_PAIR_MAX_COMPL_ANY_TH,PRIMER_PAIR_MAX_COMPL_END_TH,PRIMER_TM_SANTALUCIA,PRIMER_SALT_CORRECTIONS,PRIMER_DNA_CONC,MISPRIMING_3PRIME_BOUNDARY_BP_TO_WARN_IF_HIT,MISPRIMING_MIN_TM,MISPRIMING_SALT_CONC,MISPRIMING_OLIGO_CONC,OUTPUT_SEQUENCE_FORMAT,SUPPRESS_PRIMER_ANNOTATIONS,SUPPRESS_PURE_PRIMERS,ASSEMBLY_PRODUCT_TYPE,HOMOLOGY_MIN_LENGTH_BPS,HOMOLOGY_MAX_FRACTION_MISMATCHES,APPEND_UUID_TO_PLASMID_OLIGO_AND_SYNTHESIS_NAME,COMBINATORIAL_DESIGN_LAYOUT_TYPE,MINIMUMDNASYNTHESISLENGTHBPS,MAXIMUMDNASYNTHESISLENGTHBPS,PREFERRED_OVERHANG_SEQS,"Primer3 version"
+5,5,26,60.0,70.0,110,50,4,GGTCTC,CACACCAGGTCTCA,CACACCAGGTCTCA,2,0.1,40,60,50,0.39,159.0,2,18,36,26,60.0,70.0,5.0,47.0,47.0,47.0,47.0,1,1,250.0,4,45.0,0.05,2.5e-7,Genbank,FALSE,TRUE,circular,26,0.05,FALSE,combinatorial,50,5000,,2.4.0
+
+
+"Non-degenerate Part IDs and Sources"
+Part,,Location
+"ID Number",Name,"Source Plasmid","Reverse Complement","Start (bp)","End (bp)","Size (bp)",Sequence
+0,ImaginaryVector,ImaginaryPlasmidSource,FALSE,1,100,100,GGACACCCTGATGGCCGTGGCCATCCCATACGCCCTTTACACCGGGTGAACAAGTAAAACTTAAAAGGATCTAGAACGACGTGGTGTCTAATAGGCTTGA
+1,ImaginaryProtein1,ImaginaryGenome,FALSE,1,50,50,TGCTCTTACGGATTGCGTGACCAAATGTACCCATTCGGAGACGGTGGTGG
+2,ImaginaryProtein2,ImaginaryMetagenome,FALSE,1,50,50,TGGTGTACTTCGGCAGGACACACGGTAGACTGCCTACTCGCTGCCACGGT
+
+
+"Target Part Ordering/Selection/Strategy"
+Part
+Order,"ID Number",Name,Direction,Strategy
+0,0,ImaginaryVector,forward,DIGEST
+1,2,ImaginaryProtein2,forward,"Direct Synthesis"
+
+
+"Assembly Piece 0 CPEC primer design: Warning: Primer3 could not find a reasonable set of primers. Left primer explanation: considered 1; high tm 1; ok 0. Primer Pair explanation: considered 0; ok 0. Ignoring: self-complementarity max-tm hairpin-stability max-diff-tm..."
+"Assembly Piece 1 CPEC primer design: Warning: Primer3 could not find a reasonable set of primers. Right primer explanation: considered 1; high tm 1; ok 0. Primer Pair explanation: considered 0; ok 0. Ignoring: self-complementarity max-tm hairpin-stability max-diff-tm..."
+"Assembly Piece 0 CPEC left primer design (with respect to Assembly Piece 0): Warning: mispriming (seq: GATGGCCACGGCCATC; bps: 10..25; strand: -1; query seq: gatggccgtggccatc; query bps: 10..25 (of 26); Tm: 50.122). "
+"Assembly Piece 0 CPEC left primer design (with respect to Assembly Piece 1): Warning: mispriming (seq: GATGGCCACGGCCATC; bps: 86..101; strand: -1; query seq: gatggccgtggccatc; query bps: 10..25 (of 26); Tm: 50.122). "
+
+"Incompatibilities between Assembly Pieces:"
+"Assembly Piece","Left End","Right End"
+0,NONE,NONE
+1,NONE,"0 1 "
+"Warning: the right end of assembly piece 1 is incompatible with itself. Assembly will likely fail!"
+"Warning: the right of assembly piece 1 is incompatible with the neighboring piece 0. Assembly will likely fail!"
+"Warning: the right end of Assembly Piece 1 in Contig 1 has incompatibilities. Assembly will likely fail!"
+
+"Suggested Assembly Piece Contigs For Hierarchical Assembly:"
+Contig,"Assembly Pieces Contained"
+0,"0 "
+1,"1 "
+"Direct Synthesis ID 0: Warning: Primer3 could not find a reasonable set of primers. Right primer explanation: considered 19; high tm 16; high any compl 3; ok 0. Primer Pair explanation: considered 0; ok 0. Ignoring: self-complementarity max-tm hairpin-stability max-diff-tm..."
+
+"Digest Linearized Pieces"
+"ID Number","Sequence Source","Target Part",Length,Sequence
+0,ImaginaryPlasmidSource,0,100,GGACACCCTGATGGCCGTGGCCATCCCATACGCCCTTTACACCGGGTGAACAAGTAAAACTTAAAAGGATCTAGAACGACGTGGTGTCTAATAGGCTTGA
+
+
+"Direct Synthesis"
+"ID Number",Name,"First Target Part","Last Target Part",Length,Cost,Sequence
+0,dsmas00001,1,1,110,159.0,GGATCTAGAACGACGTGGTGTCTAATAGGCTTGATGGTGTACTTCGGCAGGACACACGGTAGACTGCCTACTCGCTGCCACGGTGGACACCCTGATGGCCGTGGCCATCC
+
+
+"Oligo Synthesis"
+"ID Number",Name,"First Target Part","Last Target Part",Length,Tm,"Tm (3' only)",Cost,Sequence,"Sequence (3' only)"
+0,mas00003_dsmas00001_forward,,,23,63.726,63.726,2.3,GGATCTAGAACGACGTGGTGTCT,GGATCTAGAACGACGTGGTGTCT
+1,mas00004_dsmas00001_reverse,,,18,65.079,65.079,1.8,GGATGGCCACGGCCATCA,GGATGGCCACGGCCATCA
+
+"PCR Reactions",,,"Forward Oligo",,"Reverse Oligo"
+"ID Number","Primary Template","Alternate Template","ID Number",Name,"ID Number",Name,"First Target Part","Last Target Part",Note,"Mean Oligo Tm","Delta Oligo Tm","Mean Oligo Tm (3' only)","Delta Oligo Tm (3' only)",Length,Sequence
+0,dsmas00001,,0,mas00003_dsmas00001_forward,1,mas00004_dsmas00001_reverse,1,1,"Direct Synthesis",64.4025,1.35299999999999,64.4025,1.35299999999999,110,GGATCTAGAACGACGTGGTGTCTAATAGGCTTGATGGTGTACTTCGGCAGGACACACGGTAGACTGCCTACTCGCTGCCACGGTGGACACCCTGATGGCCGTGGCCATCC
+
+"Assembly Pieces (SLIC/Gibson/CPEC)"
+"ID Number",Type,"Type ID Number","First Target Part","Core Target Part","Last Target Part","Relative Overlap Position","Extra 5' CPEC bps","Extra 3' CPEC bps","CPEC Tm Next","Overlap with Next (bps)","Overlap with Next","Overlap with Next Reverse Complement",Length,Sequence
+0,"Digest Linearized",0,0,0,0,-13,8,0,69.681,34,ggatctagaacgacgtggtgtctaataggcttga,TCAAGCCTATTAGACACCACGTCGTTCTAGATCC,100,GGACACCCTGATGGCCGTGGCCATCCCATACGCCCTTTACACCGGGTGAACAAGTAAAACTTAAAAGGATCTAGAACGACGTGGTGTCTAATAGGCTTGA
+1,"Direct Synthesis/PCR",0,1,1,1,13,0,0,74.639,26,GGACACCCTGATGGCCGTGGCCATCC,GGATGGCCACGGCCATCAGGGTGTCC,110,GGATCTAGAACGACGTGGTGTCTAATAGGCTTGATGGTGTACTTCGGCAGGACACACGGTAGACTGCCTACTCGCTGCCACGGTGGACACCCTGATGGCCGTGGCCATCC
+
+"Final Assembled Vector"
+Length,Sequence
+150,GGACACCCTGATGGCCGTGGCCATCCCATACGCCCTTTACACCGGGTGAACAAGTAAAACTTAAAAGGATCTAGAACGACGTGGTGTCTAATAGGCTTGATGGTGTACTTCGGCAGGACACACGGTAGACTGCCTACTCGCTGCCACGGT

@@ -17,12 +17,8 @@ class ResultZip(Base):
     # Experiment
     experiment_id = Column(
         Integer,
-        ForeignKey(
-            "experiment.id", ondelete="CASCADE", onupdate="CASCADE"
-        ),
+        ForeignKey("experiment.id", ondelete="CASCADE", onupdate="CASCADE"),
     )
     experiment = relationship("Experiment", back_populates="resultzips")
     # Workflow
-    workflow = relationship(
-        "Workflow", uselist=False, back_populates="resultzip"
-    )
+    workflow = relationship("Workflow", uselist=False, back_populates="resultzip")

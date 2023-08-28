@@ -93,9 +93,7 @@ def update_digest(
     if not crud.user.is_superuser(current_user) and (
         digest.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     digest = crud.digest.update(db=db, db_obj=digest, obj_in=digest_in)
     return digest
 
@@ -116,9 +114,7 @@ def read_digest(
     if not crud.user.is_superuser(current_user) and (
         digest.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return digest
 
 
@@ -138,8 +134,6 @@ def delete_digest(
     if not crud.user.is_superuser(current_user) and (
         digest.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     digest = crud.digest.remove(db=db, id=id)
     return digest

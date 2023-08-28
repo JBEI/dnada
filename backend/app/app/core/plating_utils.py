@@ -1545,9 +1545,7 @@ def create_plating_instructions(
     instructions["QPLATE"] = plating.apply(
         lambda row: row[plateColumn]
         + "_"
-        + platingMap.loc[
-            platingMap["96_WELL"] == row[wellColumn], "QPLATE"
-        ].values[0],
+        + platingMap.loc[platingMap["96_WELL"] == row[wellColumn], "QPLATE"].values[0],
         axis=1,
     )
     instructions["QWELL"] = plating.apply(

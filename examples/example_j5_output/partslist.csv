@@ -1,0 +1,4 @@
+"Part Name","Part Source (Sequence Display ID)","Reverse Compliment?","Start (bp)","End (bp)","Five Prime Internal Preferred Overhangs?","Three Prime Internal Preferred Overhangs?"
+ImaginaryVector,ImaginaryPlasmidSource,FALSE,1,100,"(1,26)","(-34,34)"
+ImaginaryProtein1,ImaginaryGenome,FALSE,1,50,,
+ImaginaryProtein2,ImaginaryMetagenome,FALSE,1,50,,

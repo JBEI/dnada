@@ -41,9 +41,7 @@ def create_user(
     if user:
         raise HTTPException(
             status_code=400,
-            detail=(
-                "The user with this username already exists in the system."
-            ),
+            detail=("The user with this username already exists in the system."),
         )
     user = crud.user.create(db, obj_in=user_in)
     if settings.EMAILS_ENABLED and user_in.email:
@@ -110,13 +108,9 @@ def create_user_open(
     if user:
         raise HTTPException(
             status_code=400,
-            detail=(
-                "The user with this username already exists in the system"
-            ),
+            detail=("The user with this username already exists in the system"),
         )
-    user_in = schemas.UserCreate(
-        password=password, email=email, full_name=full_name
-    )
+    user_in = schemas.UserCreate(password=password, email=email, full_name=full_name)
     user = crud.user.create(db, obj_in=user_in)
     return user
 
@@ -156,9 +150,7 @@ def update_user(
     if not user:
         raise HTTPException(
             status_code=404,
-            detail=(
-                "The user with this username does not exist in the system"
-            ),
+            detail=("The user with this username does not exist in the system"),
         )
     user = crud.user.update(db, db_obj=user, obj_in=user_in)
     return user

@@ -58,24 +58,20 @@ class CRUDPCR(CRUDBasePart[PCR, PCRCreate, PCRUpdate]):
         template_id: Optional[int] = None,
     ) -> List[PCR]:
         baseQuery = db.query(self.model)
-        if not owner_id is None:
+        if owner_id is not None:
             baseQuery = baseQuery.filter(PCR.owner_id == owner_id)
-        if not experiment_id is None:
+        if experiment_id is not None:
             baseQuery = (
                 baseQuery.join(Part)
                 .join(Design)
                 .join(Experiment)
                 .filter(Experiment.id == experiment_id)
             )
-        if not design_id is None:
-            baseQuery = (
-                baseQuery.join(Part)
-                .join(Design)
-                .filter(Design.id == design_id)
-            )
-        if not part_id is None:
+        if design_id is not None:
+            baseQuery = baseQuery.join(Part).join(Design).filter(Design.id == design_id)
+        if part_id is not None:
             baseQuery = baseQuery.filter(PCR.part_id == part_id)
-        if not template_id is None:
+        if template_id is not None:
             baseQuery = baseQuery.filter(PCR.template_id == template_id)
         return baseQuery.offset(skip).limit(limit).all()
 
@@ -176,9 +172,7 @@ class CRUDPCR(CRUDBasePart[PCR, PCRCreate, PCRUpdate]):
                 and_(
                     Part.owner_id == row["owner_id"],
                     Part.design_id == row["design_id"],
-                    Part.part_type.in_(
-                        ["Direct Synthesis/PCR", "SOE", "PCR"]
-                    ),
+                    Part.part_type.in_(["Direct Synthesis/PCR", "SOE", "PCR"]),
                     Part.type_id == row["j5_pcr_id"],
                 )
             )

@@ -23,9 +23,7 @@ async def update_banner(
     if not banner:
         raise HTTPException(status_code=404, detail="Banner not found")
     if not crud.user.is_superuser(current_user):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     banner = crud.banner.update(db=db, db_obj=banner, obj_in=banner_in)
     return banner
 

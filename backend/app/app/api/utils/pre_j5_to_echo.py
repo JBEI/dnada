@@ -6,12 +6,10 @@ import json
 import logging
 import shutil
 import tempfile
-import time
 import zipfile
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
-import requests
 from fastapi import UploadFile
 
 from app import models
@@ -43,9 +41,7 @@ def create_condense_assembly_files_input(
         tmp.seek(0)
         encoded_assembly_files_zip = tmp.read()
     encoded_assembly_files_list = (
-        pd.DataFrame(
-            individual_design_csvs, columns=["Assembly File Name"]
-        )
+        pd.DataFrame(individual_design_csvs, columns=["Assembly File Name"])
         .sort_values("Assembly File Name")
         .to_csv(index=False)
         .encode("utf-8")
@@ -78,9 +74,7 @@ def process_zip(zip_handle):
 
 def parse_assembly_instructions(items):
     assemblyInstructionsRawText = [
-        item
-        for item in items
-        if item.startswith("Combinations of Assembly Pieces")
+        item for item in items if item.startswith("Combinations of Assembly Pieces")
     ][0]
     assemblyInstructionsDF = pd.read_csv(
         io.StringIO(assemblyInstructionsRawText),
@@ -128,9 +122,7 @@ def process_combinatorial_csv(csv_handle):
     # Read condensed J5 File
     rawText = csv.reader(csv_handle, delimiter=",", dialect="excel")
     # Split into chunks
-    cleanTxt = "\n".join(
-        [",".join(row).rstrip(",").lstrip('"') for row in rawText]
-    )
+    cleanTxt = "\n".join([",".join(row).rstrip(",").lstrip('"') for row in rawText])
     items = cleanTxt.split("\n\n")
     # Get Oligos, Synths, Digests, PCRs
     for name, header in zip(
@@ -143,9 +135,7 @@ def process_combinatorial_csv(csv_handle):
         ],
     ):
         try:
-            rawText = [item for item in items if item.startswith(header)][
-                0
-            ]
+            rawText = [item for item in items if item.startswith(header)][0]
             jsonText = pd.read_csv(
                 io.StringIO(rawText), sep=",", header=0, skiprows=1
             ).to_json()
@@ -159,9 +149,7 @@ def process_combinatorial_csv(csv_handle):
             item for item in items if item.startswith("Assembly Pieces")
         ]
         assemblyPartsDFs = [
-            pd.read_csv(
-                io.StringIO(methodPieces), sep=",", header=0, skiprows=1
-            )
+            pd.read_csv(io.StringIO(methodPieces), sep=",", header=0, skiprows=1)
             for methodPieces in assemblyPartsRawText
         ]
         assemblyPartsDF = (
@@ -201,12 +189,8 @@ def process_design_upload(
             if subfile.endswith((".gb", ".eug")):
                 zip_json[subfile] = zip_file.read(subfile).decode("utf8")
             elif subfile.endswith("combinatorial.csv"):
-                csv_file = io.StringIO(
-                    zip_file.read(subfile).decode("utf8")
-                )
-                zip_json["combinatorial"] = process_combinatorial_csv(
-                    csv_file
-                )
+                csv_file = io.StringIO(zip_file.read(subfile).decode("utf8"))
+                zip_json["combinatorial"] = process_combinatorial_csv(csv_file)
                 zip_json["combinatorial"]["name"] = subfile
             elif subfile.endswith(".csv"):
                 csv_text = zip_file.read(subfile).decode("utf8")
@@ -216,9 +200,7 @@ def process_design_upload(
                     df = csv_text
                 zip_json[subfile] = df
             elif subfile.endswith(".zip"):
-                zip_json[subfile] = process_zip(
-                    io.BytesIO(zip_file.read(subfile))
-                )
+                zip_json[subfile] = process_zip(io.BytesIO(zip_file.read(subfile)))
     if write:
         with open(write, "w") as F:
             json.dump(zip_json, F, indent=2)

@@ -1,7 +1,7 @@
 """First migration
 
 Revision ID: 7145f2629494
-Revises: 
+Revises:
 Create Date: 2023-05-06 17:39:54.852268
 
 """
@@ -36,9 +36,7 @@ def upgrade():
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_user_email"), "user", ["email"], unique=True)
-    op.create_index(
-        op.f("ix_user_full_name"), "user", ["full_name"], unique=False
-    )
+    op.create_index(op.f("ix_user_full_name"), "user", ["full_name"], unique=False)
     op.create_index(op.f("ix_user_id"), "user", ["id"], unique=False)
     op.create_table(
         "experiment",
@@ -60,12 +58,8 @@ def upgrade():
         ["description"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_experiment_id"), "experiment", ["id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_experiment_name"), "experiment", ["name"], unique=False
-    )
+    op.create_index(op.f("ix_experiment_id"), "experiment", ["id"], unique=False)
+    op.create_index(op.f("ix_experiment_name"), "experiment", ["name"], unique=False)
     op.create_table(
         "design",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -90,9 +84,7 @@ def upgrade():
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_design_id"), "design", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_design_name"), "design", ["name"], unique=False
-    )
+    op.create_index(op.f("ix_design_name"), "design", ["name"], unique=False)
     op.create_index(
         op.f("ix_design_zip_file_name"),
         "design",
@@ -119,9 +111,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_resultzip_id"), "resultzip", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_resultzip_id"), "resultzip", ["id"], unique=False)
     op.create_table(
         "construct",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -146,9 +136,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_construct_id"), "construct", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_construct_id"), "construct", ["id"], unique=False)
     op.create_table(
         "oligo",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -215,9 +203,7 @@ def upgrade():
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_part_id"), "part", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_part_j5_part_id"), "part", ["j5_part_id"], unique=False
-    )
+    op.create_index(op.f("ix_part_j5_part_id"), "part", ["j5_part_id"], unique=False)
     op.create_index(op.f("ix_part_name"), "part", ["name"], unique=False)
     op.create_table(
         "rawdesign",
@@ -240,12 +226,8 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_rawdesign_id"), "rawdesign", ["id"], unique=False
-    )
-    op.create_index(
-        op.f("ix_rawdesign_name"), "rawdesign", ["name"], unique=False
-    )
+    op.create_index(op.f("ix_rawdesign_id"), "rawdesign", ["id"], unique=False)
+    op.create_index(op.f("ix_rawdesign_name"), "rawdesign", ["name"], unique=False)
     op.create_table(
         "synth",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -318,9 +300,7 @@ def upgrade():
         ["created_time"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_workflow_id"), "workflow", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_workflow_id"), "workflow", ["id"], unique=False)
     op.create_table(
         "assembly",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -358,18 +338,14 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_assembly_id"), "assembly", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_assembly_id"), "assembly", ["id"], unique=False)
     op.create_index(
         op.f("ix_assembly_j5_assembly_id"),
         "assembly",
         ["j5_assembly_id"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_assembly_name"), "assembly", ["name"], unique=False
-    )
+    op.create_index(op.f("ix_assembly_name"), "assembly", ["name"], unique=False)
     op.create_table(
         "digest",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -400,9 +376,7 @@ def upgrade():
         ["j5_digest_id"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_digest_source"), "digest", ["source"], unique=False
-    )
+    op.create_index(op.f("ix_digest_source"), "digest", ["source"], unique=False)
     op.create_table(
         "instruction",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -425,9 +399,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_instruction_id"), "instruction", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_instruction_id"), "instruction", ["id"], unique=False)
     op.create_table(
         "plate",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -480,18 +452,14 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_template_id"), "template", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_template_id"), "template", ["id"], unique=False)
     op.create_index(
         op.f("ix_template_j5_template_id"),
         "template",
         ["j5_template_id"],
         unique=False,
     )
-    op.create_index(
-        op.f("ix_template_name"), "template", ["name"], unique=False
-    )
+    op.create_index(op.f("ix_template_name"), "template", ["name"], unique=False)
     op.create_table(
         "workflowstep",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -515,9 +483,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_workflowstep_id"), "workflowstep", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_workflowstep_id"), "workflowstep", ["id"], unique=False)
     op.create_table(
         "pcr",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -567,9 +533,7 @@ def upgrade():
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_pcr_id"), "pcr", ["id"], unique=False)
-    op.create_index(
-        op.f("ix_pcr_j5_pcr_id"), "pcr", ["j5_pcr_id"], unique=False
-    )
+    op.create_index(op.f("ix_pcr_j5_pcr_id"), "pcr", ["j5_pcr_id"], unique=False)
     op.create_table(
         "plate_to_instruction",
         sa.Column("plate_id", sa.Integer(), nullable=True),
@@ -650,9 +614,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_digestwell_id"), "digestwell", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_digestwell_id"), "digestwell", ["id"], unique=False)
     op.create_table(
         "oligoorder96well",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -691,9 +653,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_oligowell_id"), "oligowell", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_oligowell_id"), "oligowell", ["id"], unique=False)
     op.create_table(
         "partwell",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -710,9 +670,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_partwell_id"), "partwell", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_partwell_id"), "partwell", ["id"], unique=False)
     op.create_table(
         "pcr_to_oligo",
         sa.Column("pcr_id", sa.Integer(), nullable=True),
@@ -778,9 +736,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_synthwell_id"), "synthwell", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_synthwell_id"), "synthwell", ["id"], unique=False)
     op.create_table(
         "templatewell",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -797,9 +753,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_templatewell_id"), "templatewell", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_templatewell_id"), "templatewell", ["id"], unique=False)
     op.create_table(
         "assemblyresult",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -841,9 +795,7 @@ def upgrade():
         ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(
-        op.f("ix_pcrresult_id"), "pcrresult", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_pcrresult_id"), "pcrresult", ["id"], unique=False)
     op.create_table(
         "sequencingresult",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -872,15 +824,11 @@ def upgrade():
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(
-        op.f("ix_sequencingresult_id"), table_name="sequencingresult"
-    )
+    op.drop_index(op.f("ix_sequencingresult_id"), table_name="sequencingresult")
     op.drop_table("sequencingresult")
     op.drop_index(op.f("ix_pcrresult_id"), table_name="pcrresult")
     op.drop_table("pcrresult")
-    op.drop_index(
-        op.f("ix_assemblyresult_id"), table_name="assemblyresult"
-    )
+    op.drop_index(op.f("ix_assemblyresult_id"), table_name="assemblyresult")
     op.drop_table("assemblyresult")
     op.drop_index(op.f("ix_templatewell_id"), table_name="templatewell")
     op.drop_table("templatewell")
@@ -895,9 +843,7 @@ def downgrade():
     op.drop_table("partwell")
     op.drop_index(op.f("ix_oligowell_id"), table_name="oligowell")
     op.drop_table("oligowell")
-    op.drop_index(
-        op.f("ix_oligoorder96well_id"), table_name="oligoorder96well"
-    )
+    op.drop_index(op.f("ix_oligoorder96well_id"), table_name="oligoorder96well")
     op.drop_table("oligoorder96well")
     op.drop_index(op.f("ix_digestwell_id"), table_name="digestwell")
     op.drop_table("digestwell")
@@ -912,9 +858,7 @@ def downgrade():
     op.drop_index(op.f("ix_workflowstep_id"), table_name="workflowstep")
     op.drop_table("workflowstep")
     op.drop_index(op.f("ix_template_name"), table_name="template")
-    op.drop_index(
-        op.f("ix_template_j5_template_id"), table_name="template"
-    )
+    op.drop_index(op.f("ix_template_j5_template_id"), table_name="template")
     op.drop_index(op.f("ix_template_id"), table_name="template")
     op.drop_table("template")
     op.drop_index(op.f("ix_plate_id"), table_name="plate")
@@ -926,9 +870,7 @@ def downgrade():
     op.drop_index(op.f("ix_digest_id"), table_name="digest")
     op.drop_table("digest")
     op.drop_index(op.f("ix_assembly_name"), table_name="assembly")
-    op.drop_index(
-        op.f("ix_assembly_j5_assembly_id"), table_name="assembly"
-    )
+    op.drop_index(op.f("ix_assembly_j5_assembly_id"), table_name="assembly")
     op.drop_index(op.f("ix_assembly_id"), table_name="assembly")
     op.drop_table("assembly")
     op.drop_index(op.f("ix_workflow_id"), table_name="workflow")
@@ -959,9 +901,7 @@ def downgrade():
     op.drop_table("design")
     op.drop_index(op.f("ix_experiment_name"), table_name="experiment")
     op.drop_index(op.f("ix_experiment_id"), table_name="experiment")
-    op.drop_index(
-        op.f("ix_experiment_description"), table_name="experiment"
-    )
+    op.drop_index(op.f("ix_experiment_description"), table_name="experiment")
     op.drop_table("experiment")
     op.drop_index(op.f("ix_user_id"), table_name="user")
     op.drop_index(op.f("ix_user_full_name"), table_name="user")

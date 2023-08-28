@@ -99,9 +99,7 @@ class CRUDAPI(Generic[SchemaType, CreateSchemaType, UpdateSchemaType]):
         if not crud.user.is_superuser(current_user) and (
             item.owner_id != current_user.id
         ):
-            raise HTTPException(
-                status_code=400, detail="Not enough permissions"
-            )
+            raise HTTPException(status_code=400, detail="Not enough permissions")
         return item
 
     def update_item(
@@ -121,9 +119,7 @@ class CRUDAPI(Generic[SchemaType, CreateSchemaType, UpdateSchemaType]):
         if not crud.user.is_superuser(current_user) and (
             item.owner_id != current_user.id
         ):
-            raise HTTPException(
-                status_code=400, detail="Not enough permissions"
-            )
+            raise HTTPException(status_code=400, detail="Not enough permissions")
         item = self.crud_model.update(db=db, db_obj=item, obj_in=item_in)
         return item
 
@@ -143,9 +139,7 @@ class CRUDAPI(Generic[SchemaType, CreateSchemaType, UpdateSchemaType]):
         if not crud.user.is_superuser(current_user) and (
             item.owner_id != current_user.id
         ):
-            raise HTTPException(
-                status_code=400, detail="Not enough permissions"
-            )
+            raise HTTPException(status_code=400, detail="Not enough permissions")
         item = self.crud_model.remove(db=db, id=id)
         return item
 

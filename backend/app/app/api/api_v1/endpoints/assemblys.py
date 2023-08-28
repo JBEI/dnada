@@ -52,9 +52,7 @@ def find_assemblys(
     """
     Find assemblys.
     """
-    assemblys = crud.assembly.find(
-        db=db, design_id=design_id, obj_in=search_obj
-    )
+    assemblys = crud.assembly.find(db=db, design_id=design_id, obj_in=search_obj)
     return assemblys
 
 
@@ -97,12 +95,8 @@ def update_assembly(
     if not crud.user.is_superuser(current_user) and (
         assembly.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
-    assembly = crud.assembly.update(
-        db=db, db_obj=assembly, obj_in=assembly_in
-    )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    assembly = crud.assembly.update(db=db, db_obj=assembly, obj_in=assembly_in)
     return assembly
 
 
@@ -122,9 +116,7 @@ def read_assembly(
     if not crud.user.is_superuser(current_user) and (
         assembly.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return assembly
 
 
@@ -144,8 +136,6 @@ def delete_assembly(
     if not crud.user.is_superuser(current_user) and (
         assembly.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     assembly = crud.assembly.remove(db=db, id=id)
     return assembly

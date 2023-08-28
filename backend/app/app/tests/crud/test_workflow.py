@@ -15,9 +15,7 @@ def test_create_workflow(db: Session) -> None:
     owner_id = user.id
     experiment = create_random_experiment(db, owner_id=owner_id)
     experiment_id = experiment.id
-    design = create_random_design(
-        db, owner_id=owner_id, experiment_id=experiment_id
-    )
+    design = create_random_design(db, owner_id=owner_id, experiment_id=experiment_id)
     design_id = design.id
     resultzip = create_random_resultzip(
         db, owner_id=owner_id, experiment_id=experiment_id
@@ -54,9 +52,7 @@ def test_update_workflow(db: Session) -> None:
     workflow = create_random_workflow(db)
     created_time2 = random_lower_string()
     workflow_update = schemas.WorkflowUpdate(created_time=created_time2)
-    workflow2 = crud.workflow.update(
-        db=db, db_obj=workflow, obj_in=workflow_update
-    )
+    workflow2 = crud.workflow.update(db=db, db_obj=workflow, obj_in=workflow_update)
     assert workflow2.created_time == created_time2
     assert workflow.id == workflow2.id
     assert workflow.design_id == workflow2.design.id

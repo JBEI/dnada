@@ -25,9 +25,7 @@ class Result(Base):
 class PCRResult(Result):
     __tablename__ = "pcrresult"
     __mapper_args__ = {"polymorphic_identity": "pcr"}
-    id = Column(
-        Integer, ForeignKey("result.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("result.id"), primary_key=True, index=True)
     polymerase = Column(String)
     good = Column(Boolean)
     # Sample
@@ -41,9 +39,7 @@ class PCRResult(Result):
 class AssemblyResult(Result):
     __tablename__ = "assemblyresult"
     __mapper_args__ = {"polymorphic_identity": "assembly"}
-    id = Column(
-        Integer, ForeignKey("result.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("result.id"), primary_key=True, index=True)
     colonies = Column(Boolean)
     # Sample
     sample_id = Column(
@@ -56,9 +52,7 @@ class AssemblyResult(Result):
 class SequencingResult(Result):
     __tablename__ = "sequencingresult"
     __mapper_args__ = {"polymorphic_identity": "sequencing"}
-    id = Column(
-        Integer, ForeignKey("result.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("result.id"), primary_key=True, index=True)
     sequencing = Column(Boolean)
     # Sample
     sample_id = Column(

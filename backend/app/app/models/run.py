@@ -25,9 +25,7 @@ class Run(Base):
     # Instruction run belongs to
     instruction_id = Column(
         Integer,
-        ForeignKey(
-            "instruction.id", ondelete="CASCADE", onupdate="CASCADE"
-        ),
+        ForeignKey("instruction.id", ondelete="CASCADE", onupdate="CASCADE"),
     )
     instruction = relationship("Instruction", back_populates="runs")
     # Children results

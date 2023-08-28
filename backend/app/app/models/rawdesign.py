@@ -19,6 +19,4 @@ class RawDesign(Base):
         Integer,
         ForeignKey("design.id", ondelete="CASCADE", onupdate="CASCADE"),
     )
-    design = relationship(
-        "Design", uselist=False, back_populates="rawdesign"
-    )
+    design = relationship("Design", uselist=False, back_populates="rawdesign")

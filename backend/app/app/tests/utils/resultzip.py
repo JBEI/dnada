@@ -9,10 +9,7 @@ from app.tests.utils.utils import random_bytestr
 
 
 def create_random_resultzip(
-    db: Session,
-    *,
-    owner_id: Optional[int] = None,
-    experiment_id: Optional[int] = None
+    db: Session, *, owner_id: Optional[int] = None, experiment_id: Optional[int] = None
 ) -> models.ResultZip:
     if owner_id is None:
         user = create_random_user(db)

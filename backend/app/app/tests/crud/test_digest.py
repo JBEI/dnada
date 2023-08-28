@@ -52,9 +52,7 @@ def test_update_digest(db: Session) -> None:
     digest = create_random_digest(db)
     sequence2 = random_lower_string()
     digest_update = schemas.DigestUpdate(sequence=sequence2)
-    digest2 = crud.digest.update(
-        db=db, db_obj=digest, obj_in=digest_update
-    )
+    digest2 = crud.digest.update(db=db, db_obj=digest, obj_in=digest_update)
     assert digest2.sequence == sequence2
     assert digest.id == digest2.id
     assert digest.source == digest2.source

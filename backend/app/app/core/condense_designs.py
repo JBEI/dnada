@@ -2,21 +2,19 @@
 
 from typing import List
 
-from app import schemas
 from app.api.utils.time import today
+from app.core import j5
 
 
-def condense_designs(designs: List[schemas.J5Design]) -> schemas.J5Design:
-    master_j5: schemas.MasterJ5 = schemas.MasterJ5.condense_designs(
+def condense_designs(designs: List[j5.J5Design]) -> j5.J5Design:
+    master_j5: j5.MasterJ5 = j5.MasterJ5.condense_designs(
         [design.master_j5 for design in designs]
     )
-    condensed_j5_design: schemas.J5Design = schemas.J5Design(
+    condensed_j5_design: j5.J5Design = j5.J5Design(
         zip_file_name=f"{today()}_condensed_design",
         master_j5=master_j5,
         plasmid_maps=[
-            plasmid_map
-            for design in designs
-            for plasmid_map in design.plasmid_maps
+            plasmid_map for design in designs for plasmid_map in design.plasmid_maps
         ],
         plasmid_designs=[
             plasmid_design

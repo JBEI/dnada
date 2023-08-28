@@ -28,9 +28,7 @@ class Well(Base):
 class OligoWell(Well):
     __tablename__ = "oligowell"
     __mapper_args__ = {"polymorphic_identity": "oligo"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,
@@ -42,9 +40,7 @@ class OligoWell(Well):
 class OligoOrder96Well(Well):
     __tablename__ = "oligoorder96well"
     __mapper_args__ = {"polymorphic_identity": "oligoorder96"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,
@@ -56,9 +52,7 @@ class OligoOrder96Well(Well):
 class DigestWell(Well):
     __tablename__ = "digestwell"
     __mapper_args__ = {"polymorphic_identity": "digest"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,
@@ -70,9 +64,7 @@ class DigestWell(Well):
 class SynthWell(Well):
     __tablename__ = "synthwell"
     __mapper_args__ = {"polymorphic_identity": "synth"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,
@@ -84,9 +76,7 @@ class SynthWell(Well):
 class PCRWell(Well):
     __tablename__ = "pcrwell"
     __mapper_args__ = {"polymorphic_identity": "pcr"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,
@@ -105,9 +95,7 @@ class PCRWell(Well):
 class TemplateWell(Well):
     __tablename__ = "templatewell"
     __mapper_args__ = {"polymorphic_identity": "template"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,
@@ -119,9 +107,7 @@ class TemplateWell(Well):
 class PartWell(Well):
     __tablename__ = "partwell"
     __mapper_args__ = {"polymorphic_identity": "part"}
-    id = Column(
-        Integer, ForeignKey("well.id"), primary_key=True, index=True
-    )
+    id = Column(Integer, ForeignKey("well.id"), primary_key=True, index=True)
     # Contents
     content_id = Column(
         Integer,

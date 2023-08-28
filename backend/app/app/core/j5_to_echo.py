@@ -7,7 +7,7 @@ import logging
 import os
 import warnings
 import zipfile
-from dataclasses import dataclass  # >python 3.7
+from dataclasses import dataclass
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import numpy as np
@@ -15,18 +15,20 @@ import pandas as pd
 from Bio import BiopythonWarning, SeqIO
 from pandera import check_types
 from pandera.typing import DataFrame
-from scipy.optimize import OptimizeResult, linprog
 
 import app.api.utils.post_automation as post_automation
 import app.core.j5_to_echo_utils as j5_to_echo_utils
 from app import schemas
-from app.core.config import settings
+from app.core.assembly import create_equimolar_assembly_instructions
 from app.core.pcr_update import distribute_pcr
 from app.core.plating_utils import create_plating_instructions
 from app.core.workflow_readme import workflow_readme
+from app.core.echo import create_echo_instructions
+from app.core import j5
+from app.core import autoprotocols
+from app.core import picking
 
 warnings.simplefilter("ignore", BiopythonWarning)
-
 
 # Global Variables
 OUTPUT_OLIGOS_PLATE_FILENAME: str = "oligos_plate.csv"
@@ -44,7 +46,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
+def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
     """Jupyter notebook in function form
 
     Arguments
@@ -56,12 +58,10 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
     template_plate_df: DataFrame[
         schemas.TemplatesPlateSchema
     ] = create_templates_plates(pcr_df=j5_design.master_j5.pcr_reactions)
-    oligos_plate_df: DataFrame[
-        schemas.OligosPlateSchema
-    ] = create_oligos_plates(oligos=j5_design.master_j5.oligos)
-    synths_plate_df: DataFrame[
-        schemas.SynthsPlateSchema
-    ] = create_synths_plates(
+    oligos_plate_df: DataFrame[schemas.OligosPlateSchema] = create_oligos_plates(
+        oligos=j5_design.master_j5.oligos
+    )
+    synths_plate_df: DataFrame[schemas.SynthsPlateSchema] = create_synths_plates(
         directSynthesisDF=j5_design.master_j5.direct_synthesis
     )
     oligos_order_form_96: DataFrame[
@@ -78,6 +78,7 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
         oligos=j5_design.master_j5.oligos,
         size=384,
     )
+
     assembly_volume_df: DataFrame[
         schemas.AssemblyVolumeSchema
     ] = create_assembly_volume_df(
@@ -97,42 +98,29 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
     pcr_echo_instructions_df: DataFrame[
         schemas.EchoInstructionsSchema
     ] = create_echo_instructions(worksheet=pcr_instructions, method="pcr")
-    pcr_bead_instructions_df = create_bead_instructions(
-        clean_pcr_df=pcr_instructions
-    )
+    pcr_bead_instructions_df = create_bead_instructions(clean_pcr_df=pcr_instructions)
     clean_pcr_df: DataFrame[schemas.PCRWorksheetSchema] = stamp_pcrs(
         cleanPCRDF=pcr_instructions
     )
-    pcr_biomek_instructions_df = create_biomek_pcr_instructions(
-        cleanPCRDF=clean_pcr_df
-    )
-    digest_instructions: DataFrame[
-        schemas.DigestsPlateSchema
-    ] = create_clean_digest_df(
+    pcr_biomek_instructions_df = create_biomek_pcr_instructions(cleanPCRDF=clean_pcr_df)
+    digest_instructions: DataFrame[schemas.DigestsPlateSchema] = create_clean_digest_df(
         digestedPiecesDF=j5_design.master_j5.digests,
         assemblyVolumeDF=assembly_volume_df,
     )
-    clean_digest_df: DataFrame[
-        schemas.DigestsWorksheetSchema
-    ] = stamp_digests(
+    clean_digest_df: DataFrame[schemas.DigestsWorksheetSchema] = stamp_digests(
         cleanDigestDF=digest_instructions, cleanPCRDF=clean_pcr_df
     )
-    dpni_biomek_instructions = create_dpni_instructions(
-        clean_pcr_df=clean_pcr_df
-    )
+    dpni_biomek_instructions = create_dpni_instructions(clean_pcr_df=clean_pcr_df)
+
     zag_echo_instructions_df: DataFrame[
         schemas.EchoInstructionsSchema
     ] = create_echo_instructions(worksheet=clean_pcr_df, method="zag")
-    assembly_parts_df: DataFrame[
-        schemas.AssemblyPartsSchema
-    ] = add_part_locations(
+    assembly_parts_df: DataFrame[schemas.AssemblyPartsSchema] = add_part_locations(
         assemblyPartsDF=j5_design.master_j5.parts,
         cleanPCRDF=clean_pcr_df,
         cleanDigestDF=clean_digest_df,
     )
-    clean_part_df: DataFrame[
-        schemas.PartsPlateSchema
-    ] = create_clean_part_df(
+    clean_part_df: DataFrame[schemas.PartsPlateSchema] = create_clean_part_df(
         parts=j5_design.master_j5.parts,
         clean_pcr_df=clean_pcr_df,
         clean_digest_df=clean_digest_df,
@@ -152,15 +140,15 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
     )
     assembly_echo_instructions_df: DataFrame[
         schemas.EchoInstructionsSchema
-    ] = create_echo_instructions(
-        worksheet=skinny_assembly_df, method="assembly"
-    )
+    ] = create_echo_instructions(worksheet=skinny_assembly_df, method="assembly")
     construct_df: DataFrame[
         schemas.ConstructWorksheetSchema
-    ] = gather_construct_worksheet(assembly_worksheet=skinny_assembly_df)
-    quant_worksheet: DataFrame[
-        schemas.PartsWorksheetSchema
-    ] = create_quant_worksheet(parts_plate=clean_part_df)
+    ] = j5_to_echo_utils.gather_construct_worksheet(
+        assembly_worksheet=skinny_assembly_df
+    )
+    quant_worksheet: DataFrame[schemas.PartsWorksheetSchema] = create_quant_worksheet(
+        parts_plate=clean_part_df
+    )
     quant_echo_instructions: DataFrame[
         schemas.EchoInstructionsSchema
     ] = create_echo_instructions(worksheet=quant_worksheet, method="quant")
@@ -175,9 +163,7 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
     )
     equimolar_assembly_echo_instructions: DataFrame[
         schemas.EchoInstructionsSchema
-    ] = create_echo_instructions(
-        worksheet=equimolar_assembly_df, method="equimolar"
-    )
+    ] = create_echo_instructions(worksheet=equimolar_assembly_df, method="equimolar")
     assembly_biomek_instructions = create_assembly_instructions(
         construct_worksheet=construct_df
     )
@@ -188,18 +174,21 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
         method="biomek",
         assemblyColumns=("src_plate", "src_well"),
     )
+    picking_results_worksheet: DataFrame[
+        schemas.PickingResultsSchema
+    ] = picking.create_picking_instructions(
+        plating_instructions=plating_instructions_biomek, n_colonies_per_construct=3
+    )
     registry_form, registry_sequences = create_registry_submission_form(
         construct_worksheet=construct_df,
     )
     plasmid_sequences: DataFrame[
         schemas.BenchlingPlasmidSequences
     ] = collect_plasmid_sequences(genbanks=j5_design.plasmid_maps)
-    aa_sequences: DataFrame[
-        schemas.BenchlingAASequences
-    ] = collect_aa_sequences(part_sources=j5_design.master_j5.part_sources)
-    gene_sequences: DataFrame[
-        schemas.BenchlingGeneSequences
-    ] = collect_gene_sequences(
+    aa_sequences: DataFrame[schemas.BenchlingAASequences] = collect_aa_sequences(
+        part_sources=j5_design.master_j5.part_sources
+    )
+    gene_sequences: DataFrame[schemas.BenchlingGeneSequences] = collect_gene_sequences(
         part_sources=j5_design.master_j5.part_sources
     )
 
@@ -208,53 +197,54 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
     results["README.md"] = workflow_readme(0)
     results["Input"] = {
         "master_j5.csv": j5_design.master_j5.to_file(),
-        "benchling_plasmid_sequences.csv": plasmid_sequences.to_csv(
-            index=False
-        ),
+        "benchling_plasmid_sequences.csv": plasmid_sequences.to_csv(index=False),
         "benchling_aa_sequences.csv": aa_sequences.to_csv(index=False),
         "benchling_gene_sequences.csv": gene_sequences.to_csv(index=False),
         "plasmid_maps": {
-            plasmid.filename: plasmid.contents
-            for plasmid in j5_design.plasmid_maps
+            plasmid.filename: plasmid.contents for plasmid in j5_design.plasmid_maps
         },
     }
     results["Step_1-Order_genes"] = {
         "README.md": workflow_readme(1),
         "synths_plate.csv": synths_plate_df.to_csv(index=False),
+        "setup_synths_plate.json": autoprotocols.order_genes(
+            synths_order_form_384=synths_plate_df
+        ),
     }
     results["Step_2-Order_oligos"] = {
         "README.md": workflow_readme(2),
         "oligos_plate.csv": oligos_plate_df.to_csv(index=False),
         "oligos_order_96.csv": oligos_order_form_96.to_csv(index=False),
         "oligos_order_384.csv": oligos_order_form_384.to_csv(index=False),
-        "oligos_order_96.xlsx": to_excel_bytestring(
-            oligos_order_form_96, "oligos"
-        ),
-        "oligos_order_384.xlsx": to_excel_bytestring(
-            oligos_order_form_384, "oligos"
+        "oligos_order_96.xlsx": to_excel_bytestring(oligos_order_form_96, "oligos"),
+        "oligos_order_384.xlsx": to_excel_bytestring(oligos_order_form_384, "oligos"),
+        "setup_oligos_plate.json": autoprotocols.order_oligos(
+            oligos_order_form_384=oligos_order_form_384
         ),
     }
     results["Step_3-Prepare_templates"] = {
         "README.md": workflow_readme(3),
         "templates_plate.csv": template_plate_df.to_csv(index=False),
+        "setup_templates_plate.json": autoprotocols.setup_templates_plate(
+            templates_plate=template_plate_df, synths_plate=synths_plate_df
+        ),
     }
     results["Step_4-Perform_PCRs"] = {
         "README.md": workflow_readme(4),
         "clean_pcr_worksheet.csv": clean_pcr_df.to_csv(index=False),
-        "pcr_echo_instructions.csv": pcr_echo_instructions_df.to_csv(
-            index=False
-        ),
-        "pcr_biomek_instructions.csv": pcr_biomek_instructions_df.to_csv(
-            line_terminator="\r\n", index=False
-        ),
-        "pcr_thermocycler_instructions.csv": (
-            thermocycler.to_csv(index=False)
+        "pcr_echo_instructions.csv": pcr_echo_instructions_df.to_csv(index=False),
+        "pcr_biomek_instructions.csv": pcr_biomek_instructions_df.to_csv(index=False),
+        "pcr_thermocycler_instructions.csv": (thermocycler.to_csv(index=False)),
+        "perform_pcrs.json": autoprotocols.perform_pcrs(
+            echo_instructions=pcr_echo_instructions_df,
+            thermocycler_instructions=thermocycler,
         ),
     }
     results["Step_5-Analyze_PCRs"] = {
         "README.md": workflow_readme(5),
-        "zag_echo_instructions.csv": zag_echo_instructions_df.to_csv(
-            index=False
+        "zag_echo_instructions.csv": zag_echo_instructions_df.to_csv(index=False),
+        "analyze_pcrs.json": autoprotocols.analyze_pcrs(
+            pcr_worksheet=clean_pcr_df,
         ),
     }
     results["Step_6-Redo_PCRs"] = {
@@ -266,29 +256,32 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
     results["Step_8-Restriction_Digests"] = {
         "README.md": workflow_readme(8),
         "digests_plate.csv": clean_digest_df.to_csv(index=False),
-        "dpni_biomek_instructions.csv": dpni_biomek_instructions.to_csv(
-            line_terminator="\r\n", index=False
+        "dpni_biomek_instructions.csv": dpni_biomek_instructions.to_csv(index=False),
+        "perform_digestions.json": autoprotocols.perform_digestions(
+            pcr_worksheet=clean_pcr_df,
+            digest_worksheet=clean_digest_df,
         ),
     }
     results["Step_9-PCR_Cleanup"] = {
         "README.md": workflow_readme(9),
-        "bead_biomek_instructions.csv": pcr_bead_instructions_df.to_csv(
-            line_terminator="\r\n", index=False
+        "bead_biomek_instructions.csv": pcr_bead_instructions_df.to_csv(index=False),
+        "perform_cleanups.json": autoprotocols.perform_cleanups(
+            pcr_worksheet=clean_pcr_df,
+            digest_worksheet=clean_digest_df,
         ),
     }
     results["Step_10-Quantify_Part_Yield"] = {
         "README.md": workflow_readme(10),
         "parts_plate.csv": clean_part_df.to_csv(index=False),
         "quant_worksheet.csv": quant_worksheet.to_csv(index=False),
-        "quant_echo_instructions.csv": quant_echo_instructions.to_csv(
-            index=False
+        "quant_echo_instructions.csv": quant_echo_instructions.to_csv(index=False),
+        "quantify_parts.json": autoprotocols.organize_and_quantify_fragments(
+            quant_worksheet=quant_worksheet
         ),
     }
     results["Step_11-Perform_Assembly"] = {
         "README.md": workflow_readme(11),
-        "clean_assembly_worksheet.csv": skinny_assembly_df.to_csv(
-            index=False
-        ),
+        "clean_assembly_worksheet.csv": skinny_assembly_df.to_csv(index=False),
         "assembly_echo_instructions.csv": (
             assembly_echo_instructions_df.to_csv(index=False)
         ),
@@ -296,11 +289,12 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
             assembly_biomek_instructions.to_csv(index=False)
         ),
         "construct_worksheet.csv": construct_df.to_csv(index=False),
-        "equimolar_assembly_worksheet.csv": (
-            equimolar_assembly_df.to_csv(index=False)
-        ),
+        "equimolar_assembly_worksheet.csv": (equimolar_assembly_df.to_csv(index=False)),
         "equimolar_assembly_echo_instructions.csv": (
             equimolar_assembly_echo_instructions.to_csv(index=False)
+        ),
+        "perform_assembly.json": autoprotocols.perform_assembly(
+            assembly_echo_instructions=assembly_echo_instructions_df
         ),
     }
     results["Step_12-Yeast_Plasmid_Prep"] = {
@@ -311,16 +305,21 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
         "plating_instructions_biomek.csv": (
             plating_instructions_biomek.to_csv(index=False)
         ),
+        "perform_transformation.json": autoprotocols.perform_transformation(
+            plating_instructions=plating_instructions_biomek
+        ),
     }
     results["Step_14-Colony_Picking"] = {
         "README.md": workflow_readme(14),
+        "picking_worksheet.csv": picking_results_worksheet.to_csv(index=False),
+        "perform_picking.json": autoprotocols.perform_colony_picking(
+            picking_instructions=picking_results_worksheet
+        ),
     }
     results["Step_15-Request_NGS"] = {
         "README.md": workflow_readme(15),
         "registry_submission_form.csv": registry_form.to_csv(index=False),
-        "registry_submission_sequences.csv": registry_sequences.to_csv(
-            index=False
-        ),
+        "registry_submission_sequences.csv": registry_sequences.to_csv(index=False),
     }
     results["Step_16-Submit_NGS_Samples"] = {
         "README.md": workflow_readme(16),
@@ -359,18 +358,14 @@ def j5_to_echo(j5_design: schemas.J5Design) -> Tuple[dict, io.BytesIO]:
                 "size": 384,
                 "raw_data": template_plate_df.to_csv(),
                 "plate_type": "template",
-                "plate_names": list(
-                    template_plate_df["PLATE ID"].unique()
-                ),
+                "plate_names": list(template_plate_df["PLATE ID"].unique()),
             },
             {
                 "name": "digests_plate.csv",
                 "size": 96,
                 "raw_data": clean_digest_df.to_csv(),
                 "plate_type": "digest",
-                "plate_names": list(
-                    clean_digest_df["DIGEST_SOURCE_PLATE"].unique()
-                ),
+                "plate_names": list(clean_digest_df["DIGEST_SOURCE_PLATE"].unique()),
             },
             {
                 "name": "parts_plate.csv",
@@ -500,17 +495,15 @@ def create_workflow_zip(contents: dict) -> io.BytesIO:
 def read_genbank_sequence(genbank: str) -> str:
     """Read sequence from genbank string"""
     return str(
-        list(
-            SeqIO.to_dict(
-                SeqIO.parse(io.StringIO(genbank), "genbank")
-            ).values()
-        )[0].seq
+        list(SeqIO.to_dict(SeqIO.parse(io.StringIO(genbank), "genbank")).values())[
+            0
+        ].seq
     ).upper()
 
 
 @check_types()
 def collect_plasmid_sequences(
-    genbanks: List[schemas.PlasmidMap],
+    genbanks: List[j5.PlasmidMap],
 ) -> DataFrame[schemas.BenchlingPlasmidSequences]:
     """Get raw plasmid sequences from design genbanks"""
     if not genbanks:
@@ -519,9 +512,7 @@ def collect_plasmid_sequences(
     plasmid_seqs: List[str] = []
     for plasmid_map in genbanks:
         plasmid_names.append(plasmid_map.filename.replace(".gb", ""))
-        plasmid_seqs.append(
-            read_genbank_sequence(genbank=plasmid_map.contents)
-        )
+        plasmid_seqs.append(read_genbank_sequence(genbank=plasmid_map.contents))
     return (
         pd.DataFrame({"Name": plasmid_names, "Bases": plasmid_seqs})
         .assign(Type="cloning")
@@ -555,9 +546,7 @@ def collect_gene_sequences(
     )
 
 
-def flatten_dict(
-    pyobj: dict, keystring: str = ""
-) -> Generator[Any, None, None]:
+def flatten_dict(pyobj: dict, keystring: str = "") -> Generator[Any, None, None]:
     """Flatten a dictionary of dictionaries
 
     Notes
@@ -566,7 +555,7 @@ def flatten_dict(
     https://www.geeksforgeeks.org/
     python-convert-nested-dictionary-into-flattened-dictionary/
     """
-    if type(pyobj) is dict:
+    if isinstance(pyobj, dict):
         keystring = keystring + "/" if keystring else keystring
         for k in pyobj:
             yield from flatten_dict(pyobj[k], keystring + k)
@@ -667,9 +656,7 @@ def verify_volume_requirements(
 
 @check_types()
 def create_skinny_assembly_df(
-    skinnyassemblyInstructionsDF: Optional[
-        DataFrame[schemas.MasterJ5SkinnyAssemblies]
-    ],
+    skinnyassemblyInstructionsDF: Optional[DataFrame[schemas.MasterJ5SkinnyAssemblies]],
     assemblyVolumeDF: DataFrame[schemas.AssemblyVolumeVerifiedSchema],
     assemblyPartsDF: DataFrame[schemas.AssemblyPartsSchema],
 ) -> DataFrame[schemas.AssemblyWorksheetSchema]:
@@ -722,9 +709,7 @@ def create_skinny_assembly_df(
         "Golden-gate": "golden-gate_plate_",
     }
     tmpFatAssembly = (
-        tmpSkinnyAssembly.groupby("Number")["Assembly Method"]
-        .agg(set)
-        .to_frame()
+        tmpSkinnyAssembly.groupby("Number")["Assembly Method"].agg(set).to_frame()
     )
     for method in methodPrefix.keys():
         numberOfMethodRxns = tmpFatAssembly.loc[
@@ -743,17 +728,13 @@ def create_skinny_assembly_df(
         ] = (
             [
                 f"{row}{column}"
-                for column, row in itertools.product(
-                    range(1, 13), "ABCDEFGH"
-                )
+                for column, row in itertools.product(range(1, 13), "ABCDEFGH")
             ]
             * 20
         )[
             :numberOfMethodRxns
         ]
-    tmpFatAssembly = tmpFatAssembly[
-        ["Destination Plate", "Destination Well"]
-    ]
+    tmpFatAssembly = tmpFatAssembly[["Destination Plate", "Destination Well"]]
 
     tmpSkinnyAssembly = tmpSkinnyAssembly.merge(
         tmpFatAssembly, left_on="Number", right_index=True, how="left"
@@ -794,9 +775,7 @@ def stamp_digests(
         :, "DIGEST_SOURCE_PLATE":"DIGEST_SOURCE_WELL"  # type: ignore
     ].apply(
         lambda row: j5_to_echo_utils.stamp(
-            j5_to_echo_utils.convert3WellTo2Well(
-                row["DIGEST_SOURCE_WELL"]
-            ),
+            j5_to_echo_utils.convert3WellTo2Well(row["DIGEST_SOURCE_WELL"]),
             (
                 int(row["DIGEST_SOURCE_PLATE"].split("_")[-1])
                 - 1
@@ -833,15 +812,12 @@ def stamp_pcrs(
         axis=1,
     )
     cleanPCRDF["ZAG_PLATE"] = [
-        f"zag_plate_{index//95 + 1}"
-        for index in range(cleanPCRDF.shape[0])
+        f"zag_plate_{index//95 + 1}" for index in range(cleanPCRDF.shape[0])
     ]
     cleanPCRDF["ZAG_WELL"] = (
         [
             f"{row}{column}"
-            for row, column in list(
-                itertools.product("ABCDEFGH", range(1, 13))
-            )[:-1]
+            for row, column in list(itertools.product("ABCDEFGH", range(1, 13)))[:-1]
         ]
         * 20
     )[: cleanPCRDF.shape[0]]
@@ -879,23 +855,18 @@ def create_clean_digest_df(
         )
         .values
     )
-    cleanDigestDF["SEQUENCE_SOURCE"] = cleanDigestDF[
-        "REACTION_NUMBER"
-    ].apply(
+    cleanDigestDF["SEQUENCE_SOURCE"] = cleanDigestDF["REACTION_NUMBER"].apply(
         lambda idNumber: digestedPiecesDF.loc[
             digestedPiecesDF["ID Number"] == idNumber, "Sequence Source"
         ].values[0]
     )
-    cleanDigestDF["SEQUENCE_LENGTH"] = cleanDigestDF[
-        "REACTION_NUMBER"
-    ].apply(
+    cleanDigestDF["SEQUENCE_LENGTH"] = cleanDigestDF["REACTION_NUMBER"].apply(
         lambda idNumber: digestedPiecesDF.loc[
             digestedPiecesDF["ID Number"] == idNumber, "Length"
         ].values[0]
     )
     cleanDigestDF["DIGEST_SOURCE_PLATE"] = [
-        f"digest_plate_{index//96 + 1}"
-        for index in range(cleanDigestDF.shape[0])
+        f"digest_plate_{index//96 + 1}" for index in range(cleanDigestDF.shape[0])
     ]
     cleanDigestDF["DIGEST_SOURCE_WELL"] = (
         [
@@ -910,9 +881,7 @@ def create_clean_digest_df(
 @check_types()
 def create_assembly_volume_df(
     assemblyPartsDF: Optional[DataFrame[schemas.MasterJ5Parts]],
-    skinnyAssemblyInstructionsDF: Optional[
-        DataFrame[schemas.MasterJ5SkinnyAssemblies]
-    ],
+    skinnyAssemblyInstructionsDF: Optional[DataFrame[schemas.MasterJ5SkinnyAssemblies]],
 ) -> DataFrame[schemas.AssemblyVolumeSchema]:
     """Creates a worksheet that calculates how much volume required for
     each part"""
@@ -933,9 +902,9 @@ def create_assembly_volume_df(
     assemblyVolumeDF["PART_NAME"] = assemblyPartsDF["Part(s)"]
     assemblyVolumeDF["TYPE"] = assemblyPartsDF["Type"]
     assemblyVolumeDF["TYPE_ID"] = assemblyPartsDF["Type ID Number"]
-    assemblyVolumeDF["NUMBER_OF_USES"] = assemblyPartsDF[
-        "ID Number"
-    ].apply(lambda idNumber: tmpCounts[idNumber])
+    assemblyVolumeDF["NUMBER_OF_USES"] = assemblyPartsDF["ID Number"].apply(
+        lambda idNumber: tmpCounts[idNumber]
+    )
     assemblyVolumeDF["VOLUME_REQUIRED_(uL)"] = (
         assemblyVolumeDF["NUMBER_OF_USES"] * 2.0
     )  # 2 uL of each part per rxn
@@ -984,9 +953,7 @@ def create_synths_plates(
         template="directSynthesiss_plate_{}",
         plate_size=96,
     )
-    directSynthesisPlateVolume = [
-        65
-    ] * directSynthesisPlateLiquidType.shape[0]
+    directSynthesisPlateVolume = [65] * directSynthesisPlateLiquidType.shape[0]
     directSynthesisPlateSequence = directSynthesisDF["Sequence"]
     directSynthesisPlateDF = pd.DataFrame(
         list(
@@ -1029,18 +996,14 @@ def add_part_locations(
             zip(
                 list(
                     assemblySourceDataFrames[row["Type"]].loc[
-                        assemblySourceDataFrames[row["Type"]].loc[
-                            :, "REACTION_NUMBER"
-                        ]
+                        assemblySourceDataFrames[row["Type"]].loc[:, "REACTION_NUMBER"]
                         == row["Type ID Number"],
                         "PARTS_SOURCE_PLATE",
                     ]
                 ),
                 list(
                     assemblySourceDataFrames[row["Type"]].loc[
-                        assemblySourceDataFrames[row["Type"]].loc[
-                            :, "REACTION_NUMBER"
-                        ]
+                        assemblySourceDataFrames[row["Type"]].loc[:, "REACTION_NUMBER"]
                         == row["Type ID Number"],
                         "PARTS_WELL",
                     ]
@@ -1055,290 +1018,23 @@ def add_part_locations(
     assemblyPartsDF["FIRST_PART_SOURCE_PLATE"] = assemblyPartsDF[
         "SOURCE_LOCATIONS"
     ].apply(lambda locations: locations[0][0])
-    assemblyPartsDF["FIRST_PART_WELL"] = assemblyPartsDF[
-        "SOURCE_LOCATIONS"
-    ].apply(lambda locations: locations[0][1])
+    assemblyPartsDF["FIRST_PART_WELL"] = assemblyPartsDF["SOURCE_LOCATIONS"].apply(
+        lambda locations: locations[0][1]
+    )
     return assemblyPartsDF
 
 
 def well_to_index(well: str) -> int:
     well_clean: str = j5_to_echo_utils.convert3WellTo2Well(well)
     possible_wells: List[str] = [
-        f"{row}{column}"
-        for row, column in itertools.product("ABCDEFGH", range(1, 13))
+        f"{row}{column}" for row, column in itertools.product("ABCDEFGH", range(1, 13))
     ]
     assert well_clean in possible_wells
     well_index_map = {
         letter_number: biomek_index
-        for letter_number, biomek_index in zip(
-            possible_wells, range(1, 97)
-        )
+        for letter_number, biomek_index in zip(possible_wells, range(1, 97))
     }
     return well_index_map[well_clean]
-
-
-@check_types()
-def create_echo_instructions(
-    worksheet: pd.DataFrame, method: str
-) -> DataFrame[schemas.EchoInstructionsSchema]:
-    """Given a worksheet, create echo instructions
-
-    Arguments
-    ---------
-    worksheet : pd.DataFrame
-        A pandas dataframe that contains information
-        about how to set up PCR or assembly rxns
-
-    method : str
-        The type of worksheet given. Can be either
-        'pcr', 'assembly', or 'zag'
-
-    Returns
-    -------
-    echoPlate : pd.DataFrame
-        A pandas dataframe that contains echo
-        instructions
-    """
-    if worksheet.empty:
-        return pd.DataFrame(
-            columns=[
-                "Source Plate Name",
-                "Source Well",
-                "Destination Plate Name",
-                "Destination Well",
-                "Transfer Volume",
-            ]
-        )
-    echoPlate = pd.DataFrame()
-    if method == "pcr":
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet["PRIMER1_PLATE"],
-                worksheet["PRIMER2_PLATE"],
-                worksheet["TEMPLATE_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [
-                worksheet["PRIMER1_WELL"],
-                worksheet["PRIMER2_WELL"],
-                worksheet["TEMPLATE_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [
-                worksheet["OUTPUT_PLATE"],
-                worksheet["OUTPUT_PLATE"],
-                worksheet["OUTPUT_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [
-                worksheet["OUTPUT_WELL"],
-                worksheet["OUTPUT_WELL"],
-                worksheet["OUTPUT_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = pd.concat(
-            [
-                worksheet["PRIMER1_VOLUME"],
-                worksheet["PRIMER2_VOLUME"],
-                worksheet["TEMPLATE_VOLUME"],
-            ],
-            axis=0,
-        )
-    elif method == "assembly":
-        echoPlate = worksheet.loc[
-            :,
-            [
-                "Source Plate",
-                "Source Well",
-                "Destination Plate",
-                "Destination Well",
-            ],
-        ]
-        echoPlate["Transfer Volume"] = 2000  # nL
-        echoPlate = echoPlate.rename(
-            columns={
-                "Source Plate": "Source Plate Name",
-                "Destination Plate": "Destination Plate Name",
-            }
-        )
-    elif method == "equimolar":
-        echoPlate = worksheet.loc[
-            :,
-            [
-                "Source Plate",
-                "Source Well",
-                "Destination Plate",
-                "Destination Well",
-                "Transfer Volume",
-            ],
-        ]
-        echoPlate = echoPlate.rename(
-            columns={
-                "Source Plate": "Source Plate Name",
-                "Destination Plate": "Destination Plate Name",
-            }
-        )
-    elif method == "zag":
-        echoPlate = worksheet.loc[
-            :,
-            ["PARTS_SOURCE_PLATE", "PARTS_WELL", "ZAG_PLATE", "ZAG_WELL"],
-        ].copy()
-        echoPlate["Transfer Volume"] = 500
-        echoPlate.columns = [
-            "Source Plate Name",
-            "Source Well",
-            "Destination Plate Name",
-            "Destination Well",
-            "Transfer Volume",
-        ]
-    elif method == "custom":
-        partColumnHeaders = [
-            column
-            for column in worksheet.columns
-            if (column.startswith("Part(s)"))
-            and (not column.endswith(("ID", "Source Plate", "Well")))
-        ]
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet[f"{part} Source Plate"]
-                for part in partColumnHeaders
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [worksheet[f"{part} Well"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [worksheet["Assembly Plate"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [worksheet["Assembly Well"] for part in partColumnHeaders],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = 2000  # nL
-    elif method == "quant":
-        echoPlate = worksheet.loc[
-            :,
-            [
-                "PART_PLATE",
-                "PART_WELL",
-                "QUANT_PLATE",
-                "QUANT_WELL",
-                "QUANT_VOLUME",
-            ],
-        ].copy()
-        echoPlate.columns = [
-            "Source Plate Name",
-            "Source Well",
-            "Destination Plate Name",
-            "Destination Well",
-            "Transfer Volume",
-        ]
-    elif method == "redo_pcr":
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet["PRIMER1_PLATE"],
-                worksheet["PRIMER2_PLATE"],
-                worksheet["TEMPLATE_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [
-                worksheet["PRIMER1_WELL"],
-                worksheet["PRIMER2_WELL"],
-                worksheet["TEMPLATE_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [
-                worksheet["REDO_PLATE"],
-                worksheet["REDO_PLATE"],
-                worksheet["REDO_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [
-                worksheet["REDO_WELL"],
-                worksheet["REDO_WELL"],
-                worksheet["REDO_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = pd.concat(
-            [
-                worksheet["PRIMER1_VOLUME"],
-                worksheet["PRIMER2_VOLUME"],
-                worksheet["TEMPLATE_VOLUME"],
-            ],
-            axis=0,
-        )
-    elif method == "colony_pcr":
-        echoPlate["Source Plate Name"] = pd.concat(
-            [
-                worksheet["PRIMER1_PLATE"],
-                worksheet["PRIMER2_PLATE"],
-                worksheet["NGS_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Source Well"] = pd.concat(
-            [
-                worksheet["PRIMER1_WELL"],
-                worksheet["PRIMER2_WELL"],
-                worksheet["NGS_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Plate Name"] = pd.concat(
-            [
-                worksheet["COLONY_PCR_PLATE"],
-                worksheet["COLONY_PCR_PLATE"],
-                worksheet["COLONY_PCR_PLATE"],
-            ],
-            axis=0,
-        )
-        echoPlate["Destination Well"] = pd.concat(
-            [
-                worksheet["COLONY_PCR_WELL"],
-                worksheet["COLONY_PCR_WELL"],
-                worksheet["COLONY_PCR_WELL"],
-            ],
-            axis=0,
-        )
-        echoPlate["Transfer Volume"] = pd.concat(
-            [
-                worksheet["PRIMER1_VOLUME"],
-                worksheet["PRIMER2_VOLUME"],
-                worksheet["NGS_VOLUME"],
-            ],
-            axis=0,
-        )
-    echoPlate = (
-        echoPlate.dropna()
-        .sort_values(
-            [
-                "Source Plate Name",
-                "Destination Plate Name",
-                "Source Well",
-                "Destination Well",
-            ],
-            ascending=[True, True, True, True],
-        )
-        .reset_index(drop=True)
-    )
-    return echoPlate
 
 
 @check_types()
@@ -1498,25 +1194,19 @@ def create_oligos_order_form(
         oligoOrderDF["Well Position"] = oligoPlateDF["PLATE WELL"]
     oligoOrderDF["Name"] = oligoPlateDF["LIQUID TYPE"]
     oligoOrderDF["Sequence"] = oligoPlateDF["LIQUID TYPE"].apply(
-        lambda oligo: oligos.loc[
-            oligos["Name"] == oligo, "Sequence"
-        ].values[0]
+        lambda oligo: oligos.loc[oligos["Name"] == oligo, "Sequence"].values[0]
     )
     oligoOrderDF["Plate"] = [
-        f"oligo_order_plate_{i//size + 1}"
-        for i in range(oligoOrderDF.shape[0])
+        f"oligo_order_plate_{i//size + 1}" for i in range(oligoOrderDF.shape[0])
     ]
     oligoOrderDF["Length"] = oligoOrderDF["Sequence"].apply(len)
-    return oligoOrderDF.loc[
-        :, ["Plate", "Well Position", "Name", "Sequence", "Length"]
-    ]
+    return oligoOrderDF.loc[:, ["Plate", "Well Position", "Name", "Sequence", "Length"]]
 
 
-def to_excel_bytestring(df: pd.DataFrame, sheet_name: str = None) -> bytes:
+def to_excel_bytestring(df: pd.DataFrame, sheet_name: str | None = None) -> bytes:
     output = io.BytesIO()
-    writer = pd.ExcelWriter(output)
-    df.to_excel(writer, sheet_name=sheet_name, index=False)
-    writer.save()
+    with pd.ExcelWriter(output) as writer:
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
     return output.getvalue()
 
 
@@ -1615,14 +1305,9 @@ def create_dpni_instructions(
     dest_df: pd.DataFrame = clean_pcr_df.loc[:, names].rename(
         columns={names[0]: "dest_pos", names[1]: "dest_well"}
     )
-    dest_df["dest_well"] = (
-        dest_df["dest_well"].apply(well_to_index).astype(str) + ", "
-    )
+    dest_df["dest_well"] = dest_df["dest_well"].apply(well_to_index).astype(str) + ", "
     dest_df = (
-        dest_df.groupby("dest_pos")
-        .agg("sum")
-        .reset_index()
-        .sort_values("dest_pos")
+        dest_df.groupby("dest_pos").agg("sum").reset_index().sort_values("dest_pos")
     )
     dest_df["dest_pos"] = [f"dest_{i+1}" for i in range(dest_df.shape[0])]
     dest_plt_num: int = dest_df["dest_pos"].size
@@ -1644,9 +1329,7 @@ def create_assembly_instructions(
     dest_df: pd.DataFrame = construct_worksheet.loc[:, names].rename(
         columns={names[0]: "dest_pos", names[1]: "dest_well"}
     )
-    dest_df["dest_well"] = (
-        dest_df["dest_well"].apply(well_to_index).astype(str) + ", "
-    )
+    dest_df["dest_well"] = dest_df["dest_well"].apply(well_to_index).astype(str) + ", "
     dest_df = dest_df.groupby("dest_pos").agg("sum").reset_index()
     dest_plt_num: int = dest_df["dest_pos"].size
     sample_num: int = construct_worksheet.shape[0]
@@ -1740,35 +1423,26 @@ def create_biomek_pcr_instructions(
                     "MasterMix_reqVol",
                 ],
                 "Value": [
-                    settings.FIRST_SUPERUSER,
+                    "email_address",
                     "PCR",
                     tmpBiomekWells.shape[0],
                     dnaVolume,  # uL DNA
                     waterVolume,  # uL watts
-                    tmpBiomekWells.shape[0]
-                    * waterVolume
-                    / 1000
-                    / 0.9,  # mL watts
+                    tmpBiomekWells.shape[0] * waterVolume / 1000 / 0.9,  # mL watts
                     mmVolume,  # uL 2X MM
-                    tmpBiomekWells.shape[0]
-                    * mmVolume
-                    / 1000
-                    / 0.9,  # mL watts
+                    tmpBiomekWells.shape[0] * mmVolume / 1000 / 0.9,  # mL watts
                 ],
             }
         )
-        templateDF = pd.concat(
-            [templateDF, tmpBiomekWells], axis=1
-        ).rename(columns={"OUTPUT_WELL": "Well_user"})
+        templateDF = pd.concat([templateDF, tmpBiomekWells], axis=1).rename(
+            columns={"OUTPUT_WELL": "Well_user"}
+        )
         templateDF["Well"] = templateDF["Well_user"]
         templateDF["Src_vol"] = templateDF["Well"].apply(
             lambda well: dnaVolume if not pd.isna(well) else np.nan
         )
         templateDF["MasterMix_well"] = templateDF.apply(
-            lambda row: (row.name + 1)
-            * mmVolume
-            // (mmTubeVolume * 0.9 * 1000)
-            + 1
+            lambda row: (row.name + 1) * mmVolume // (mmTubeVolume * 0.9 * 1000) + 1
             if not pd.isna(row["Well_user"])
             else np.nan,
             axis=1,
@@ -1779,211 +1453,22 @@ def create_biomek_pcr_instructions(
     return templateDF
 
 
-@check_types()
-def gather_construct_worksheet(
-    assembly_worksheet: DataFrame[schemas.AssemblyWorksheetSchema],
-) -> DataFrame[schemas.ConstructWorksheetSchema]:
-    construct_worksheet = (
-        assembly_worksheet.loc[
-            :,
-            [
-                "Number",
-                "Name",
-                "Parts Summary",
-                "Assembly Method",
-                "Destination Plate",
-                "Destination Well",
-            ],
-        ]
-        .groupby("Number")
-        .first()
-        .reset_index()
-        .rename(
-            columns={
-                "Number": "j5_construct_id",
-                "Name": "name",
-                "Parts Summary": "parts",
-                "Assembly Method": "assembly_method",
-                "Destination Plate": "src_plate",
-                "Destination Well": "src_well",
-            }
-        )
-    )
-    return construct_worksheet
-
-
 def create_quant_worksheet(
     parts_plate: DataFrame[schemas.PartsPlateSchema],
 ) -> DataFrame[schemas.PartsWorksheetSchema]:
     parts_plate["QUANT_PLATE"] = [
-        f"quant_plate_{index//88 + 1}"
-        for index in range(parts_plate.shape[0])
+        f"quant_plate_{index//88 + 1}" for index in range(parts_plate.shape[0])
     ]
     parts_plate["QUANT_WELL"] = (
         [
             f"{row}{column}"
-            for row, column in list(
-                itertools.product("ABCDEFGH", range(1, 12))
-            )
+            for row, column in list(itertools.product("ABCDEFGH", range(1, 12)))
         ]
         * 20
     )[: parts_plate.shape[0]]
     parts_plate["QUANT_VOLUME"] = 1000
-    parts_plate[
-        "Conc (ng/uL)"
-    ] = 50  # Assume each PCR Rxn is 50 ng/uL initially
+    parts_plate["Conc (ng/uL)"] = 50  # Assume each PCR Rxn is 50 ng/uL initially
     return parts_plate
-
-
-def index_to_384_well(index: int) -> str:
-    index = int(index % 384)
-    possible_wells: List[str] = [
-        f"{row}{column}"
-        for row, column in itertools.product(
-            "ABCDEFGHIJKLMNOP", range(1, 25)
-        )
-    ]
-    index_well_map = {
-        biomek_index: letter_number
-        for letter_number, biomek_index in zip(
-            possible_wells, range(1, 385)
-        )
-    }
-    return index_well_map[index]
-
-
-def optimize_equimolar_assembly_rxn(
-    conc: np.ndarray, max_vol: float, max_fmol: float
-) -> np.ndarray:
-    """
-    Arguments
-    ---------
-    conc: np.array
-        Concentrations of each part in a reaction
-
-    max_vol: float
-        Max total volume allowed for reaction (in uL)
-
-    max_fmol: float
-        Max amount of part used for reaction (in fmols)
-    """
-    # Objective: maximize mols used subject to following constraints
-    c: np.ndarray = conc * -1
-
-    # Each part has maximum mol
-    A_ub: np.ndarray = np.diag(c * -1)
-    b_ub: np.ndarray = np.full(c.size, fill_value=max_fmol)
-
-    # Total volume of all parts should be less than max_vol
-    A_ub = np.vstack([A_ub, np.ones(c.size)])
-    b_ub = np.hstack([b_ub, np.array([max_vol])])
-
-    # Each part should use equal mol
-    A_eq: np.ndarray = np.eye(N=c.size - 1, M=c.size, k=1)
-    np.fill_diagonal(A_eq, -1.0)
-    A_eq = A_eq * c
-
-    b_eq: np.ndarray = np.zeros(c.size - 1)
-
-    # Each part volume should be non-negative and under the max volume
-    bounds: Tuple[float, Optional[float]] = (0, max_vol)
-
-    # Perform optimization
-    result: OptimizeResult = linprog(
-        c=c,
-        A_ub=A_ub,
-        b_ub=b_ub,
-        A_eq=A_eq,
-        b_eq=b_eq,
-        bounds=bounds,
-        options={"cholesky": False, "sym_pos": False},
-    )
-    volumes: np.ndarray = np.zeros(c.size)
-    if not result.status:
-        volumes = result.x
-    return volumes
-
-
-def add_water_to_assembly(
-    assembly_worksheet: pd.DataFrame,
-    max_vol: float = 5.0,  # uL
-    volume_column: str = "EQUIMOLAR_VOLUME",
-) -> pd.DataFrame:
-    water_required = (
-        max_vol
-        - assembly_worksheet.groupby("Number").agg({volume_column: "sum"})
-    ).reset_index()
-    water_required["Part Name"] = "water"
-    water_required["Destination Plate"] = water_required["Number"].apply(
-        lambda number: assembly_worksheet.loc[
-            assembly_worksheet["Number"] == number, "Destination Plate"
-        ].values[0]
-    )
-    water_required["Destination Well"] = water_required["Number"].apply(
-        lambda number: assembly_worksheet.loc[
-            assembly_worksheet["Number"] == number, "Destination Well"
-        ].values[0]
-    )
-    water_required = water_required.loc[
-        ~np.isclose(water_required[volume_column], 0.0, atol=1e-3), :
-    ]
-    water_required["Source Plate"] = "water_plate"
-    water_required["Source Well"] = (
-        water_required[volume_column].cumsum() // 45
-    ) + 1
-    water_required["Source Plate"] = water_required["Source Well"].apply(
-        lambda well: f"water_plate_{int(well//384)+1}"
-    )
-    water_required["Source Well"] = water_required["Source Well"].apply(
-        index_to_384_well
-    )
-    return assembly_worksheet.append(water_required)
-
-
-def create_equimolar_assembly_instructions(
-    assembly_df: DataFrame[schemas.AssemblyWorksheetSchema],
-    quant_df: DataFrame[schemas.PartsWorksheetSchema],
-    max_fmol: float = 100.0,
-    max_vol: float = 5.0,
-    max_part_percentage: float = 1.0,
-) -> DataFrame[schemas.EquimolarAssemblyWorksheetSchema]:
-    equimolar_worksheet = assembly_df.merge(
-        quant_df,
-        left_on=["Source Plate", "Source Well"],
-        right_on=["PART_PLATE", "PART_WELL"],
-    ).sort_values(["Number", "Part Order"])
-    # Formula from: https://nebiocalculator.neb.com/#!/dsdnaamt
-    equimolar_worksheet["Conc (fmol/uL)"] = (
-        (equimolar_worksheet["Conc (ng/uL)"] * 1e-6)
-        / ((equimolar_worksheet["PART_LENGTH"] * 617.96) + 36.04)
-    ) * 1e12
-    equimolar_worksheet["EQUIMOLAR_VOLUME"] = 0
-
-    for rxn in equimolar_worksheet["Number"].unique():
-        conc: np.ndarray = equimolar_worksheet.loc[
-            equimolar_worksheet["Number"] == rxn, "Conc (fmol/uL)"
-        ].values
-        vol: np.ndarray = optimize_equimolar_assembly_rxn(
-            conc=conc,
-            max_vol=max_vol * max_part_percentage,
-            max_fmol=max_fmol,
-        )
-        equimolar_worksheet.loc[
-            equimolar_worksheet["Number"] == rxn, "EQUIMOLAR_VOLUME"
-        ] = vol
-    equimolar_worksheet["fmol_used"] = (
-        equimolar_worksheet["Conc (fmol/uL)"]
-        * equimolar_worksheet["EQUIMOLAR_VOLUME"]
-    )
-    equimolar_worksheet = add_water_to_assembly(
-        assembly_worksheet=equimolar_worksheet,
-        max_vol=max_vol,
-        volume_column="EQUIMOLAR_VOLUME",
-    )
-    equimolar_worksheet["Transfer Volume"] = (
-        equimolar_worksheet["EQUIMOLAR_VOLUME"] * 1000
-    ).map(int)
-    return equimolar_worksheet
 
 
 @dataclass
@@ -1994,12 +1479,12 @@ class RegistryOptions:
     biosafety_level: int
     keywords: str
     notes: str
-    status: str 
-    strain_name_prefix: str 
+    status: str
+    strain_name_prefix: str
     creator: str
     creator_email: str
-    host: str  
-    genotype: str 
+    host: str
+    genotype: str
     circular: bool
     selection_marker: str
     strain_selection_marker: str
@@ -2040,12 +1525,9 @@ def create_registry_submission_form(
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     plasmid_name = construct_worksheet["name"]
     strain_name = [
-        f"{options.strain_name_prefix}{i}"
-        for i in range(plasmid_name.shape[0])
+        f"{options.strain_name_prefix}{i}" for i in range(plasmid_name.shape[0])
     ]
-    summary = "Plasmid consisting of parts: " + construct_worksheet[
-        "parts"
-    ].astype(str)
+    summary = "Plasmid consisting of parts: " + construct_worksheet["parts"].astype(str)
     strain_summary = f"{options.host} carrying " + summary
     sequence_file = plasmid_name + ".gb"
     registry_form = pd.DataFrame(
@@ -2099,9 +1581,7 @@ def create_registry_submission_form(
             ]
         )
     )
-    registry_sequence = pd.DataFrame(
-        {"Plasmid Sequence File": sequence_file}
-    )
+    registry_sequence = pd.DataFrame({"Plasmid Sequence File": sequence_file})
     return registry_form, registry_sequence
 
 
@@ -2117,9 +1597,7 @@ def create_oligos_96(
     biomek_oligos_plate["PLATE ID"] = biomek_oligos_plate["Plate"].apply(
         lambda name: f'backup_oligos_plate_{name.split("_")[-1]}'
     )
-    biomek_oligos_plate["PLATE WELL"] = biomek_oligos_plate[
-        "Well Position"
-    ]
+    biomek_oligos_plate["PLATE WELL"] = biomek_oligos_plate["Well Position"]
     biomek_oligos_plate["VOLUME (uL)"] = 1500
     return biomek_oligos_plate.loc[
         :, ["PLATE ID", "PLATE WELL", "LIQUID TYPE", "VOLUME (uL)"]
@@ -2128,9 +1606,9 @@ def create_oligos_96(
 
 def create_templates_96(templates_plate: pd.DataFrame) -> pd.DataFrame:
     biomek_templates_plate: pd.DataFrame = templates_plate.copy()
-    biomek_templates_plate["PLATE WELL"] = templates_plate[
-        "PLATE WELL"
-    ].apply(j5_to_echo_utils.unstamp)
+    biomek_templates_plate["PLATE WELL"] = templates_plate["PLATE WELL"].apply(
+        j5_to_echo_utils.unstamp
+    )
     biomek_templates_plate["PLATE ID"] = [
         f"backup_templates_plate_{i//96 + 1}"
         for i in range(biomek_templates_plate.shape[0])

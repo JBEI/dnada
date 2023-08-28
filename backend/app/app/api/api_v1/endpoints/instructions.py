@@ -44,9 +44,7 @@ def read_instructions(
     return instructions
 
 
-@router.post(
-    "/instructions/find", response_model=List[schemas.Instruction]
-)
+@router.post("/instructions/find", response_model=List[schemas.Instruction])
 def find_instructions(
     *,
     db: Session = Depends(deps.get_db),
@@ -135,15 +133,11 @@ def update_instruction(
     """
     instruction = crud.instruction.get(db=db, id=id)
     if not instruction:
-        raise HTTPException(
-            status_code=404, detail="Instruction not found"
-        )
+        raise HTTPException(status_code=404, detail="Instruction not found")
     if not crud.user.is_superuser(current_user) and (
         instruction.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     instruction = crud.instruction.update(
         db=db, db_obj=instruction, obj_in=instruction_in
     )
@@ -162,15 +156,11 @@ def read_instruction(
     """
     instruction = crud.instruction.get(db=db, id=id)
     if not instruction:
-        raise HTTPException(
-            status_code=404, detail="Instruction not found"
-        )
+        raise HTTPException(status_code=404, detail="Instruction not found")
     if not crud.user.is_superuser(current_user) and (
         instruction.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return instruction
 
 
@@ -186,15 +176,11 @@ def read_instruction_runs(
     """
     instruction = crud.instruction.get(db=db, id=id)
     if not instruction:
-        raise HTTPException(
-            status_code=404, detail="Instruction not found"
-        )
+        raise HTTPException(status_code=404, detail="Instruction not found")
     if not crud.user.is_superuser(current_user) and (
         instruction.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return instruction.runs
 
 
@@ -210,14 +196,10 @@ def delete_instruction(
     """
     instruction = crud.instruction.get(db=db, id=id)
     if not instruction:
-        raise HTTPException(
-            status_code=404, detail="Instruction not found"
-        )
+        raise HTTPException(status_code=404, detail="Instruction not found")
     if not crud.user.is_superuser(current_user) and (
         instruction.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     instruction = crud.instruction.remove(db=db, id=id)
     return instruction

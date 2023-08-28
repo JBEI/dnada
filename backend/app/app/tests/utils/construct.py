@@ -9,10 +9,7 @@ from app.tests.utils.utils import random_integer, random_lower_string
 
 
 def create_random_construct(
-    db: Session,
-    *,
-    owner_id: Optional[int] = None,
-    design_id: Optional[int] = None
+    db: Session, *, owner_id: Optional[int] = None, design_id: Optional[int] = None
 ) -> models.Construct:
     if owner_id is None:
         user = create_random_user(db)

@@ -1,8 +1,7 @@
 import logging
 from typing import Any, List
 
-from fastapi import (APIRouter, Depends, File, Form, HTTPException,
-                     UploadFile)
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
@@ -47,9 +46,7 @@ def find_designs(
     """
     Find designs.
     """
-    designs = crud.design.find(
-        db=db, experiment_id=experiment_id, obj_in=search_obj
-    )
+    designs = crud.design.find(db=db, experiment_id=experiment_id, obj_in=search_obj)
     return designs
 
 
@@ -70,9 +67,7 @@ def update_design(
     if not crud.user.is_superuser(current_user) and (
         design.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     design = crud.design.update(db=db, db_obj=design, obj_in=design_in)
     return design
 
@@ -93,9 +88,7 @@ def read_design(
     if not crud.user.is_superuser(current_user) and (
         design.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     return design
 
 
@@ -115,9 +108,7 @@ def delete_design(
     if not crud.user.is_superuser(current_user) and (
         design.owner_id != current_user.id
     ):
-        raise HTTPException(
-            status_code=400, detail="Not enough permissions"
-        )
+        raise HTTPException(status_code=400, detail="Not enough permissions")
     design = crud.design.remove(db=db, id=id)
     return design
 
@@ -147,17 +138,14 @@ def create_design(
         if not crud.user.is_superuser(current_user) and (
             parent_experiment.owner_id != current_user.id
         ):
-            raise HTTPException(
-                status_code=400, detail="Not enough permissions"
-            )
+            raise HTTPException(status_code=400, detail="Not enough permissions")
         logger.debug(f"Beginning to process design: {name}")
         zip_json = process_j5_zip_upload(design_file)
         if "combinatorial" not in zip_json:
             raise HTTPException(
                 status_code=422,
                 detail=(
-                    "Design File invalid. Require combinatorial"
-                    " csv to exist in zip"
+                    "Design File invalid. Require combinatorial" " csv to exist in zip"
                 ),
             )
 

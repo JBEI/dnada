@@ -1,0 +1,78 @@
+From e3545d908b363eb87b13a247efe240e1ef9ecbd5 Mon Sep 17 00:00:00 2001
+From: Alberto Nava <albertoanava@gmail.com>
+Date: Sun, 20 Aug 2023 11:20:17 -0700
+Subject: [PATCH] Add serialization statement in _refify for
+ OligosynthesizeOligo
+
+---
+ autoprotocol/protocol.py | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/autoprotocol/protocol.py b/autoprotocol/protocol.py
+index 56050b1..da07a1d 100644
+--- a/autoprotocol/protocol.py
++++ b/autoprotocol/protocol.py
+@@ -10,7 +10,7 @@ import json
+ import warnings
+
+ from collections import defaultdict
+-from dataclasses import dataclass, field
++from dataclasses import dataclass, field, fields
+ from numbers import Number
+ from typing import Any, Dict, List, Optional, Tuple, Union
+
+@@ -4197,7 +4197,6 @@ class Protocol:
+
+         instructions = []
+         for pe in parsed_extracts:
+-
+             lane_set = [e["lane"] for e in pe]
+
+             if len(lane_set) > max_well:
+@@ -5090,7 +5089,7 @@ class Protocol:
+                         if c.get("emission_wavelength"):
+                             try:
+                                 Unit(c.get("emission_wavelength"))
+-                            except (UnitError) as e:
++                            except UnitError as e:
+                                 raise UnitError(
+                                     "Each `emission_wavelength` "
+                                     "must be of type unit."
+@@ -5102,7 +5101,7 @@ class Protocol:
+                         if c.get("excitation_wavelength"):
+                             try:
+                                 Unit(c.get("excitation_wavelength"))
+-                            except (UnitError) as e:
++                            except UnitError as e:
+                                 raise UnitError(
+                                     "Each `excitation_wavelength` "
+                                     "must be of type unit."
+@@ -5717,7 +5716,6 @@ class Protocol:
+         return self._add_mag(mag, head, new_tip, new_instruction, "mix")
+
+     def image_plate(self, ref: Union[str, Container], mode: str, dataref: str):
+-
+         """
+         Capture an image of the specified container.
+
+@@ -6594,6 +6592,7 @@ class Protocol:
+             Ref,
+             Compound,
+             Informatics,
++            OligosynthesizeOligo,
+         ],
+     ):
+         """
+@@ -6631,6 +6630,10 @@ class Protocol:
+             return op_data.as_dict()
+         elif isinstance(op_data, Informatics):
+             return self._refify(op_data.as_dict())
++        elif isinstance(op_data, OligosynthesizeOligo):
++            return self._refify(
++                {field.name: getattr(op_data, field.name) for field in fields(op_data)}
++            )
+         else:
+             return op_data
+
+--
+2.38.1

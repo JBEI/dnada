@@ -5,8 +5,7 @@ from app import crud, schemas
 from app.tests.utils.design import create_random_design
 from app.tests.utils.oligo import create_random_oligo
 from app.tests.utils.user import create_random_user
-from app.tests.utils.utils import (random_float, random_integer,
-                                   random_lower_string)
+from app.tests.utils.utils import random_float, random_integer, random_lower_string
 
 
 def test_create_oligo(db: Session) -> None:

@@ -28,8 +28,6 @@ plate_to_instruction_association = Table(
     Column(
         "instruction_id",
         Integer,
-        ForeignKey(
-            "instruction.id", ondelete="CASCADE", onupdate="CASCADE"
-        ),
+        ForeignKey("instruction.id", ondelete="CASCADE", onupdate="CASCADE"),
     ),
 )

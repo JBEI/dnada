@@ -16,15 +16,46 @@ from .crud_run import run
 from .crud_synth import synth
 from .crud_template import template
 from .crud_user import user
-from .crud_well import (digestwell, oligoorder96well, oligowell, partwell,
-                        pcrwell, synthwell, templatewell)
+from .crud_well import (
+    digestwell,
+    oligoorder96well,
+    oligowell,
+    partwell,
+    pcrwell,
+    synthwell,
+    templatewell,
+)
 from .crud_workflow import workflow
 from .crud_workflowstep import workflowstep
 
-# For a new basic set of CRUD operations you could just do
-
-# from .base import CRUDBase
-# from app.models.item import Item
-# from app.schemas.item import ItemCreate, ItemUpdate
-
-# item = CRUDBase[Item, ItemCreate, ItemUpdate](Item)
+__all__ = [
+    "assembly",
+    "banner",
+    "construct",
+    "design",
+    "digest",
+    "experiment",
+    "instruction",
+    "oligo",
+    "part",
+    "pcr",
+    "plate",
+    "rawdesign",
+    "assemblyresult",
+    "pcrresult",
+    "sequencingresult",
+    "resultzip",
+    "run",
+    "synth",
+    "template",
+    "user",
+    "digestwell",
+    "oligoorder96well",
+    "oligowell",
+    "partwell",
+    "pcrwell",
+    "synthwell",
+    "templatewell",
+    "workflow",
+    "workflowstep",
+]

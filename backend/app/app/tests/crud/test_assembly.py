@@ -16,9 +16,7 @@ def test_create_assembly(db: Session) -> None:
     design_id = design.id
     part = create_random_part(db, owner_id=owner_id, design_id=design_id)
     part_id = part.id
-    construct = create_random_construct(
-        db, owner_id=owner_id, design_id=design_id
-    )
+    construct = create_random_construct(db, owner_id=owner_id, design_id=design_id)
     construct_id = construct.id
     j5_assembly_id = random_integer()
     name = random_lower_string()
@@ -64,9 +62,7 @@ def test_update_assembly(db: Session) -> None:
     assembly = create_random_assembly(db)
     name2 = random_lower_string()
     assembly_update = schemas.AssemblyUpdate(name=name2)
-    assembly2 = crud.assembly.update(
-        db=db, db_obj=assembly, obj_in=assembly_update
-    )
+    assembly2 = crud.assembly.update(db=db, db_obj=assembly, obj_in=assembly_update)
     assert assembly2.name == name2
     assert assembly.id == assembly2.id
     assert assembly.assembly_method == assembly2.assembly_method

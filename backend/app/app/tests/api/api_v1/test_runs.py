@@ -1,5 +1,5 @@
 import json
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -34,9 +34,7 @@ def test_create_pcr_run(
     data: List[Tuple[str, Any]] = [
         ("settings", (None, json.dumps(run_settings))),
     ]
-    with open(PEAK_TABLE_T1_P1, "r") as F1, open(
-        PEAK_TABLE_T1_P2, "r"
-    ) as F2:
+    with open(PEAK_TABLE_T1_P1, "r") as F1, open(PEAK_TABLE_T1_P2, "r"):
         data.append(("peak_files", ("peak_file1.csv", F1)))
         # data.append(("peak_files", ('peak_file2.csv', F2)))
         response = client.post(

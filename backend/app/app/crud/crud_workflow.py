@@ -6,9 +6,7 @@ from app.models.workflow import Workflow
 from app.schemas.workflow import WorkflowCreate, WorkflowUpdate
 
 
-class CRUDWorkflow(
-    CRUDBaseDesign[Workflow, WorkflowCreate, WorkflowUpdate]
-):
+class CRUDWorkflow(CRUDBaseDesign[Workflow, WorkflowCreate, WorkflowUpdate]):
 
     """CRUD Methods for Workflows"""
 

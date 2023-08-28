@@ -2,41 +2,31 @@
 
 import io
 import itertools
-import os
 import zipfile
-from datetime import datetime
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
-import openpyxl
 import pandas as pd
 
-from app.core.j5_to_echo import (create_echo_instructions,
-                                 create_equimolar_assembly_instructions,
-                                 create_plating_instructions,
-                                 gather_construct_worksheet)
-from app.core.j5_to_echo_utils import (convert2WellTo3Well,
-                                       determineSuccessfulBands, stamp)
-
-NGS_TEMPLATE_FILE: str = os.path.join(
-    os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))),
-    "ngs_form_empty_template_v2.xlsx",
+from app.core.echo import create_echo_instructions
+from app.core.assembly import create_equimolar_assembly_instructions
+from app.core.plating_utils import create_plating_instructions
+from app.core.j5_to_echo_utils import (
+    convert2WellTo3Well,
+    determineSuccessfulBands,
+    gather_construct_worksheet,
 )
+from app.api.utils.ngs import setup_ngs_worksheets
 
 
-def analyze_zag(
-    peak_files: list, size_file: io.StringIO, settings: dict
-) -> str:
+def analyze_zag(peak_files: list, size_file: io.StringIO, settings: dict) -> str:
     expected_size_worksheet = pd.read_csv(size_file, index_col=0)
-    plate_names = expected_size_worksheet[
-        settings["zagColumnPlate"]
-    ].unique()
+    plate_names = expected_size_worksheet[settings["zagColumnPlate"]].unique()
     assert len(plate_names) == len(
         peak_files
     ), "Did not provide the correct amount of zag peak files"
     peak_tables = {
-        plate_name: peak_file
-        for plate_name, peak_file in zip(plate_names, peak_files)
+        plate_name: peak_file for plate_name, peak_file in zip(plate_names, peak_files)
     }
 
     pcr_results = determineSuccessfulBands(
@@ -53,9 +43,7 @@ def analyze_zag(
     return pcr_results.to_csv()
 
 
-def analyze_manual_pcr_results(
-    result_file: io.StringIO, settings: dict
-) -> str:
+def analyze_manual_pcr_results(result_file: io.StringIO, settings: dict) -> str:
     plateColumns: Tuple[str, str, str] = (
         settings["zagColumnPlate"],
         settings["zagColumnWell"],
@@ -75,12 +63,8 @@ def analyze_manual_pcr_results(
     return result_df.to_csv()
 
 
-def create_pcr_redo(
-    pcr_results_file: io.StringIO, settings: dict
-) -> Dict[str, str]:
-    redo_pcr_worksheet = create_pcr_redo_worksheet(
-        pcr_results_file, settings
-    )
+def create_pcr_redo(pcr_results_file: io.StringIO, settings: dict) -> Dict[str, str]:
+    redo_pcr_worksheet = create_pcr_redo_worksheet(pcr_results_file, settings)
     redo_pcr_echo_instructions = create_echo_instructions(
         redo_pcr_worksheet, "redo_pcr"
     )
@@ -94,12 +78,8 @@ def create_pcr_redo_worksheet(
     pcr_results_file: io.StringIO, settings: dict
 ) -> pd.DataFrame:
     pcr_results = pd.read_csv(pcr_results_file, index_col=0)
-    failed_pcrs = pcr_results.loc[
-        ~pcr_results[settings["pcrResultColumn"]], :
-    ]
-    pcr_results_plates = pcr_results[
-        settings["pcrOutputPlateColumn"]
-    ].unique()
+    failed_pcrs = pcr_results.loc[~pcr_results[settings["pcrResultColumn"]], :]
+    pcr_results_plates = pcr_results[settings["pcrOutputPlateColumn"]].unique()
     min_number_of_redo_plates = ((failed_pcrs.shape[0] - 1) // 96) + 1
     new_plate_prefix = f"redo_pcr_plate_T{settings['pcrRedoTrial']}"
     if pcr_results_plates.size == 1:
@@ -107,18 +87,12 @@ def create_pcr_redo_worksheet(
         plate_prefix = "_".join(
             failed_pcrs.iloc[
                 0,
-                failed_pcrs.columns.get_loc(
-                    settings["pcrOutputPlateColumn"]
-                ),
+                failed_pcrs.columns.get_loc(settings["pcrOutputPlateColumn"]),
             ].split("_")[:-1]
         )
-        failed_pcrs.loc[
-            :, settings["pcrRedoPlateColumn"]
-        ] = failed_pcrs.loc[
+        failed_pcrs.loc[:, settings["pcrRedoPlateColumn"]] = failed_pcrs.loc[
             :, settings["pcrOutputPlateColumn"]
-        ].str.replace(
-            plate_prefix, new_plate_prefix
-        )
+        ].str.replace(plate_prefix, new_plate_prefix)
         failed_pcrs.loc[:, settings["pcrRedoWellColumn"]] = failed_pcrs[
             settings["pcrOutputWellColumn"]
         ]
@@ -127,18 +101,12 @@ def create_pcr_redo_worksheet(
         plate_prefix = "_".join(
             failed_pcrs.iloc[
                 0,
-                failed_pcrs.columns.get_loc(
-                    settings["pcrOutputPlateColumn"]
-                ),
+                failed_pcrs.columns.get_loc(settings["pcrOutputPlateColumn"]),
             ].split("_")[:-1]
         )
-        failed_pcrs.loc[
-            :, settings["pcrRedoPlateColumn"]
-        ] = failed_pcrs.loc[
+        failed_pcrs.loc[:, settings["pcrRedoPlateColumn"]] = failed_pcrs.loc[
             :, settings["pcrOutputPlateColumn"]
-        ].str.replace(
-            plate_prefix, new_plate_prefix
-        )
+        ].str.replace(plate_prefix, new_plate_prefix)
         failed_pcrs.loc[:, settings["pcrRedoWellColumn"]] = failed_pcrs[
             settings["pcrOutputWellColumn"]
         ]
@@ -193,9 +161,7 @@ def create_plate_column(
 
 
 def consolidate_pcr_trials_main(pcr_trial_files_dict: dict) -> io.BytesIO:
-    results_df = consolidate_pcr_trials(
-        pcr_trial_files=pcr_trial_files_dict
-    )
+    results_df = consolidate_pcr_trials(pcr_trial_files=pcr_trial_files_dict)
     (
         template_df,
         plate_maps_df,
@@ -253,9 +219,7 @@ def prepare_consolidate_pcr_trials_output(
     excel_workbook.seek(0)
     zip_results = io.BytesIO()
     with zipfile.ZipFile(zip_results, "w") as archive:
-        archive.writestr(
-            "consolidate_pcr_workbook.xlsx", excel_workbook.read()
-        )
+        archive.writestr("consolidate_pcr_workbook.xlsx", excel_workbook.read())
         archive.writestr(
             "biomek_instructions.csv",
             biomekConsolidateInstructions.to_csv(),
@@ -292,12 +256,12 @@ def consolidate_pcr_trials(pcr_trial_files: dict) -> pd.DataFrame:
         trialSheets[trial] = trialSheets[trial].loc[
             :, ~trialSheets[trial].columns.str.match("Unnamed")
         ]
-        trialSheets[trial]["REDO_PLATE"] = trialSheets[trial][
-            "OUTPUT_LOCATION"
-        ].apply(lambda location: location.split("#")[0])
-        trialSheets[trial]["REDO_WELL"] = trialSheets[trial][
-            "OUTPUT_LOCATION"
-        ].apply(lambda location: location.split("#")[1])
+        trialSheets[trial]["REDO_PLATE"] = trialSheets[trial]["OUTPUT_LOCATION"].apply(
+            lambda location: location.split("#")[0]
+        )
+        trialSheets[trial]["REDO_WELL"] = trialSheets[trial]["OUTPUT_LOCATION"].apply(
+            lambda location: location.split("#")[1]
+        )
         trialSheets[trial]["trial"] = trial
         trialSheets[trial]["src_plate"] = trialSheets[trial]["REDO_PLATE"]
         trialSheets[trial]["src_well"] = trialSheets[trial]["REDO_WELL"]
@@ -309,32 +273,18 @@ def consolidate_pcr_trials(pcr_trial_files: dict) -> pd.DataFrame:
         )
     consolidatedRxns = trialSheets["trial_1"].copy()
     for trial in trialSheets:
-        for entry in (
-            trialSheets[trial].loc[trialSheets[trial]["GOOD"]].iterrows()
-        ):
+        for entry in trialSheets[trial].loc[trialSheets[trial]["GOOD"]].iterrows():
             # If there isn't a successful reaction in consolidated rxns
             # dataframe Then update the consolidated dataframe with the
             # rxn from the new trial
             if not consolidatedRxns.loc[
-                (
-                    consolidatedRxns["OUTPUT_PLATE"]
-                    == entry[1]["OUTPUT_PLATE"]
-                )
-                & (
-                    consolidatedRxns["OUTPUT_WELL"]
-                    == entry[1]["OUTPUT_WELL"]
-                ),
+                (consolidatedRxns["OUTPUT_PLATE"] == entry[1]["OUTPUT_PLATE"])
+                & (consolidatedRxns["OUTPUT_WELL"] == entry[1]["OUTPUT_WELL"]),
                 "GOOD",
             ].values[0]:
                 consolidatedRxns.loc[
-                    (
-                        consolidatedRxns["OUTPUT_PLATE"]
-                        == entry[1]["OUTPUT_PLATE"]
-                    )
-                    & (
-                        consolidatedRxns["OUTPUT_WELL"]
-                        == entry[1]["OUTPUT_WELL"]
-                    )
+                    (consolidatedRxns["OUTPUT_PLATE"] == entry[1]["OUTPUT_PLATE"])
+                    & (consolidatedRxns["OUTPUT_WELL"] == entry[1]["OUTPUT_WELL"])
                 ] = entry[1].values
     return consolidatedRxns
 
@@ -371,16 +321,10 @@ def generate_consolidation_instructions(
         consolidatedWorksheet["GOOD"]
     ].copy()
     consolidatedWorksheet["trial_src_plate"] = (
-        consolidatedWorksheet["trial"]
-        + "#"
-        + consolidatedWorksheet["src_plate"]
+        consolidatedWorksheet["trial"] + "#" + consolidatedWorksheet["src_plate"]
     )
-    numberOfSrcPlates: int = int(
-        consolidatedWorksheet["trial_src_plate"].unique().size
-    )
-    numberOfDestPlates: int = int(
-        consolidatedWorksheet["OUTPUT_PLATE"].unique().size
-    )
+    numberOfSrcPlates: int = int(consolidatedWorksheet["trial_src_plate"].unique().size)
+    numberOfDestPlates: int = int(consolidatedWorksheet["OUTPUT_PLATE"].unique().size)
     numberOfSamples: int = int(sum(consolidatedWorksheet["GOOD"]))
     volumeToMove: int = 50  # uL
 
@@ -427,16 +371,9 @@ def generate_consolidation_instructions(
     # Preparing plate map csv
     srcPlates = np.sort(templateDF["src_plt"].unique())
     destPlates = np.sort(templateDF["dest_plt"].unique())
-    srcMap = [
-        (f"src_{i+1}", srcPlate) for i, srcPlate in enumerate(srcPlates)
-    ]
-    destMap = [
-        (f"dest_{i+1}", destPlate)
-        for i, destPlate in enumerate(destPlates)
-    ]
-    plateMaps = pd.DataFrame(
-        srcMap + destMap, columns=["biomek_name", "plate_name"]
-    )
+    srcMap = [(f"src_{i+1}", srcPlate) for i, srcPlate in enumerate(srcPlates)]
+    destMap = [(f"dest_{i+1}", destPlate) for i, destPlate in enumerate(destPlates)]
+    plateMaps = pd.DataFrame(srcMap + destMap, columns=["biomek_name", "plate_name"])
 
     # Making biomek readable csv instructions
     biomekInstructions = templateDF.copy()
@@ -468,18 +405,15 @@ def create_equivolume_assembly(
         assembly_worksheet=assembly_worksheet,
         parts=parts,
     )
-    possible_constructs_worksheet: pd.DataFrame = (
-        gather_construct_worksheet(
-            assembly_worksheet=possible_assembly_worksheet
-        )
+    possible_constructs_worksheet: pd.DataFrame = gather_construct_worksheet(
+        assembly_worksheet=possible_assembly_worksheet
     )
     methodPrefix = {
         "SLIC/Gibson/CPEC": "possible_gibson_plate_{}",
         "Golden-gate": "possible_golden-gate_plate_{}",
     }
     tmp_gibson_worksheet = possible_constructs_worksheet.loc[
-        possible_constructs_worksheet["assembly_method"]
-        == "SLIC/Gibson/CPEC",
+        possible_constructs_worksheet["assembly_method"] == "SLIC/Gibson/CPEC",
         ["j5_construct_id", "src_plate", "src_well"],
     ]
     tmp_gibson_worksheet["src_plate"] = create_plate_column(
@@ -506,9 +440,9 @@ def create_equivolume_assembly(
         how="col",
         plate_size=96,
     )
-    tmp_worksheet = pd.concat(
-        [tmp_gibson_worksheet, tmp_golden_gate_worksheet]
-    ).rename(columns={"src_plate": "tmp_plate", "src_well": "tmp_well"})
+    tmp_worksheet = pd.concat([tmp_gibson_worksheet, tmp_golden_gate_worksheet]).rename(
+        columns={"src_plate": "tmp_plate", "src_well": "tmp_well"}
+    )
     possible_constructs_worksheet = (
         possible_constructs_worksheet.merge(
             tmp_worksheet, how="left", on="j5_construct_id"
@@ -617,9 +551,9 @@ def find_possible_constructs(
         on=["Source Plate", "Source Well"],
     )
     # Find possible constructs
-    possible_constructs_mask = assembly_worksheet_results.groupby(
-        "Name"
-    ).agg({"GOOD": all})
+    possible_constructs_mask = assembly_worksheet_results.groupby("Name").agg(
+        {"GOOD": all}
+    )
     # Create possible assembly instructions
     assembly_worksheet_possible = assembly_worksheet_results.loc[
         assembly_worksheet_results["Name"].apply(
@@ -657,10 +591,7 @@ def prepare_standalone_equimolar_assembly_and_water(
     zip_results = io.BytesIO()
     with zipfile.ZipFile(zip_results, "w") as archive:
         archive.writestr(
-            (
-                "equimolar_assembly_instructions/"
-                "equimolar_assembly_worksheet.csv"
-            ),
+            ("equimolar_assembly_instructions/" "equimolar_assembly_worksheet.csv"),
             equimolar_df.to_csv(),
         )
         archive.writestr(
@@ -682,9 +613,7 @@ def analyze_qpix(qpix_file: io.StringIO, plating_file: io.StringIO) -> str:
         skiprows=11 if skip_qpix_header else 0,
         skipinitialspace=True,
     )
-    plating: pd.DataFrame = pd.read_csv(
-        plating_file, skipinitialspace=True
-    )
+    plating: pd.DataFrame = pd.read_csv(plating_file, skipinitialspace=True)
     source_barcode_map: Dict[str, str] = {
         a: b
         for a, b in zip(
@@ -694,9 +623,7 @@ def analyze_qpix(qpix_file: io.StringIO, plating_file: io.StringIO) -> str:
     }
     dest_barcode_map: Dict[str, str] = {
         barcode: f"glycerol_stock_{i+1}"
-        for i, barcode in enumerate(
-            np.sort(qpix["Destination Barcode"].unique())
-        )
+        for i, barcode in enumerate(np.sort(qpix["Destination Barcode"].unique()))
     }
     qpix["QPLATE"] = qpix["Source Barcode"].apply(
         lambda barcode: source_barcode_map[barcode]
@@ -745,70 +672,11 @@ def create_ngs_submission_form(
     registry_file: io.StringIO,
     username: str,
 ) -> io.BytesIO:
-    glycerol: pd.DataFrame = pd.read_csv(glycerol_stock_file)
-    registry: pd.DataFrame = (
-        pd.read_csv(registry_file)
-        .rename(
-            columns={
-                "name": "Name",
-                "Part_ID": "Part ID",
-                "part id": "Part ID",
-                "part_id": "Part ID",
-            }
-        )
-        .loc[:, ["Name", "Part ID"]]
+    ngs_worksheet, submission_excels = setup_ngs_worksheets(
+        glycerol_stock_file=glycerol_stock_file,
+        registry_file=registry_file,
+        username=username,
     )
-    ngs_worksheet: pd.DataFrame = glycerol.merge(
-        right=registry,
-        how="left",
-        left_on="name",
-        right_on="Name",
-    )
-    ngs_worksheet["Sample_Name"] = (
-        ngs_worksheet["GLYCEROL_PLATE"]
-        + "-"
-        + ngs_worksheet["GLYCEROL_WELL"]
-    )
-    ngs_worksheet["NGS_PLATE"] = ngs_worksheet[
-        "GLYCEROL_PLATE"
-    ].apply(
-        lambda plate: "{username} {plate_number} {date}".format(
-            username=username,
-            plate_number=((int(plate.split("_")[-1]) - 1) // 4) + 1,
-            date=datetime.today().strftime("%Y%m%d")[2:],
-        )
-    )
-    ngs_worksheet["NGS_WELL"] = ngs_worksheet.apply(
-        lambda row: stamp(
-            row["GLYCEROL_WELL"],
-            (int(row["GLYCEROL_PLATE"].split("_")[-1]) - 1) % 4,
-        ),
-        axis=1,
-    )
-
-    submission_excels: Dict[str, io.BytesIO] = {}
-    submission_excel: io.BytesIO
-    for plate in ngs_worksheet["NGS_PLATE"].unique():
-        submission_excel = io.BytesIO()
-        workbook = openpyxl.load_workbook(filename=NGS_TEMPLATE_FILE)
-        worksheet = workbook.active
-        worksheet["AI33"] = "Rows, Quads"
-        for i, value in enumerate(
-            ngs_worksheet.loc[
-                ngs_worksheet["NGS_PLATE"] == plate, "Sample_Name"
-            ].values
-        ):
-            worksheet[f"AK{34 + i}"] = value
-            worksheet[f"AM{34 + i}"] = "Plasmid__purified"
-        for i, value in enumerate(
-            ngs_worksheet.loc[
-                ngs_worksheet["NGS_PLATE"] == plate, "Part ID"
-            ].values
-        ):
-            worksheet[f"AL{34 + i}"] = value
-        workbook.save(submission_excel)
-        submission_excel.seek(0)
-        submission_excels[plate] = submission_excel
 
     zip_results = io.BytesIO()
     with zipfile.ZipFile(zip_results, "w") as archive:
@@ -829,30 +697,18 @@ def analyze_sequencing_results(
     sample_file: io.StringIO, sequencing_results_file: io.StringIO
 ) -> io.BytesIO:
     samples: pd.DataFrame = pd.read_csv(sample_file)
-    sequencing_results: pd.DataFrame = pd.read_csv(
-        sequencing_results_file
-    ).rename(
+    sequencing_results: pd.DataFrame = pd.read_csv(sequencing_results_file).rename(
         columns={"Sample_Name": "NGS_NAME", "Sample Name": "NGS_NAME"}
     )
     tmpSeries: pd.Series = samples["NGS_PLATE"].str.split(" ").str[:2]
     samples["NGS_NAME"] = (
-        tmpSeries.str[0]
-        + "-"
-        + tmpSeries.str[1]
-        + "-"
-        + samples["Sample_Name"]
+        tmpSeries.str[0] + "-" + tmpSeries.str[1] + "-" + samples["Sample_Name"]
     )
-    samples["NGS_ID"] = (
-        samples["NGS_NAME"].str.replace("_", "-").str.replace(" ", "-")
-    )
+    samples["NGS_ID"] = samples["NGS_NAME"].str.replace("_", "-").str.replace(" ", "-")
     sequencing_results["NGS_ID"] = (
-        sequencing_results["NGS_NAME"]
-        .str.replace("_", "-")
-        .str.replace(" ", "-")
+        sequencing_results["NGS_NAME"].str.replace("_", "-").str.replace(" ", "-")
     )
-    samples = samples.merge(
-        right=sequencing_results, how="left", on="NGS_ID"
-    )
+    samples = samples.merge(right=sequencing_results, how="left", on="NGS_ID")
     first_successful_constructs: pd.DataFrame = (
         samples.loc[samples["IS_CLEAN"], :]
         .groupby(["j5_construct_id"])
@@ -887,12 +743,8 @@ def analyze_sequencing_results(
     ]
     instructions["row"] = instructions["FINAL_WELL"].str[0]
     instructions["col"] = instructions["FINAL_WELL"].str[1:]
-    instructions = instructions.sort_values(
-        by=["FINAL_PLATE", "col", "row"]
-    )
-    instructions = instructions.drop(columns=["col", "row"]).reset_index(
-        drop=True
-    )
+    instructions = instructions.sort_values(by=["FINAL_PLATE", "col", "row"])
+    instructions = instructions.drop(columns=["col", "row"]).reset_index(drop=True)
     instructions["VOLUME"] = 10
 
     biomek: pd.DataFrame = instructions.rename(
@@ -904,12 +756,8 @@ def analyze_sequencing_results(
             "VOLUME": "volume",
         }
     )
-    biomek["src_plate"] = (
-        "src_plate_" + biomek["src_plate"].str.split("_").str[-1]
-    )
-    biomek["dest_plate"] = (
-        "dest_plate_" + biomek["dest_plate"].str.split("_").str[-1]
-    )
+    biomek["src_plate"] = "src_plate_" + biomek["src_plate"].str.split("_").str[-1]
+    biomek["dest_plate"] = "dest_plate_" + biomek["dest_plate"].str.split("_").str[-1]
     zip_results = io.BytesIO()
     with zipfile.ZipFile(zip_results, "w") as archive:
         archive.writestr(
@@ -924,10 +772,7 @@ def analyze_sequencing_results(
             instructions.to_csv(index=False),
         )
         archive.writestr(
-            (
-                "cherry_picking_instructions/"
-                "biomek_cherry_picking_instructions.csv"
-            ),
+            ("cherry_picking_instructions/" "biomek_cherry_picking_instructions.csv"),
             biomek.to_csv(index=False),
         )
     zip_results.seek(0)

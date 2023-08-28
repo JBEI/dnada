@@ -17,16 +17,13 @@ from pandera import check_types
 from pandera.typing import DataFrame
 
 from app import schemas
-from app.core.config import settings
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def chunker(
-    seq: Sequence[Any], size: int
-) -> Generator[Sequence[Any], None, None]:
+def chunker(seq: Sequence[Any], size: int) -> Generator[Sequence[Any], None, None]:
     """Group an iterable into chunks
     Found at: https://stackoverflow.com/a/434328
 
@@ -38,8 +35,7 @@ def chunker(
     [[[1], [2], [3], [4]], [[5], [6], [7], [8]], [[9]]]
     """
     return (
-        seq[pos : pos + size]  # noqa: ignore E203
-        for pos in range(0, len(seq), size)
+        seq[pos : pos + size] for pos in range(0, len(seq), size)  # noqa: ignore E203
     )
 
 
@@ -53,7 +49,7 @@ def call_neb_tm_api(
             "seqpairs": primer_sequences,
             "conc": 0.5,
             "prodcode": "q5-0",
-            "email": settings.FIRST_SUPERUSER,
+            "email": "no-reply@lbl.gov",
         }
         tm_response = requests.post(
             "https://tmapi.neb.com/tm/batch",
@@ -154,9 +150,7 @@ def run_kmeans_constrained(
     else:
         size_max = 16
 
-    kgroups = KMeansConstrained(n_clusters=kcount, size_max=size_max).fit(
-        tm_mean
-    )
+    kgroups = KMeansConstrained(n_clusters=kcount, size_max=size_max).fit(tm_mean)
 
     labels = kgroups.labels_
     cluster_centers = kgroups.cluster_centers_
@@ -168,9 +162,7 @@ def get_zone_wells(ZoneID: int, n: int) -> List[str]:
     assert n >= 0 and n <= 16, "n must be between 0 and 16"
     return [
         f"{row}{col}"
-        for col, row in list(
-            product([ZoneID * 2 + 1, (ZoneID + 1) * 2], "ABCDEFGH")
-        )
+        for col, row in list(product([ZoneID * 2 + 1, (ZoneID + 1) * 2], "ABCDEFGH"))
     ][:n]
 
 
@@ -268,17 +260,12 @@ def distribute_pcr(
         left_on="ID Number",
         right_on="TYPE_ID",
     )
-    pcr_instructions_build["REACTION_NUMBER"] = pcr_instructions_build[
-        "ID Number"
-    ]
+    pcr_instructions_build["REACTION_NUMBER"] = pcr_instructions_build["ID Number"]
 
     pcr_instructions = pd.DataFrame(columns=pcr_instructions_build.columns)
     for row in pcr_instructions_build.index:
         for welluse in range(
-            ceil(
-                pcr_instructions_build.at[row, "NUMBER_OF_USES"]
-                / max_well_uses
-            )
+            ceil(pcr_instructions_build.at[row, "NUMBER_OF_USES"] / max_well_uses)
         ):
             pcr_instructions = pd.concat(
                 [pcr_instructions, pcr_instructions_build.iloc[[row]]]
@@ -300,9 +287,7 @@ def distribute_pcr(
         left_on=["PRIMER1_SEQUENCE", "PRIMER2_SEQUENCE"],
         right_on=["seq1", "seq2"],
     )
-    pcr_instructions["OPTIMAL_ANNEALING_TEMP"] = pcr_instructions[
-        "Mean Oligo Tm (NEB)"
-    ]
+    pcr_instructions["OPTIMAL_ANNEALING_TEMP"] = pcr_instructions["Mean Oligo Tm (NEB)"]
 
     labels, cluster_centers = run_kmeans_constrained(
         tm_mean=pcr_instructions["OPTIMAL_ANNEALING_TEMP"].to_frame()
@@ -317,27 +302,19 @@ def distribute_pcr(
     }
 
     reaction_temperatures = cluster_centers[labels]
-    reaction_labels = np.vectorize(lambda label: cluster_ids[label])(
-        labels
-    )
+    reaction_labels = np.vectorize(lambda label: cluster_ids[label])(labels)
 
-    pcr_instructions[
-        "THERMOCYCLER_ZONE_ANNEALING_TEMP"
-    ] = reaction_temperatures
+    pcr_instructions["THERMOCYCLER_ZONE_ANNEALING_TEMP"] = reaction_temperatures
     pcr_instructions["THERMOCYCLER_ZONE"] = reaction_labels
-    pcr_instructions["THERMOCYCLER_ZONE_ID"] = (
-        pcr_instructions["THERMOCYCLER_ZONE"] % 6
-    )
+    pcr_instructions["THERMOCYCLER_ZONE_ID"] = pcr_instructions["THERMOCYCLER_ZONE"] % 6
     pcr_instructions = pcr_instructions.sort_values(
         by=["THERMOCYCLER_ZONE", "OPTIMAL_ANNEALING_TEMP", "ID Number"]
     ).reset_index(drop=True)
 
-    pcr_instructions["THERMOCYCLER_BLOCK"] = (
-        pcr_instructions["THERMOCYCLER_ZONE"] // 6
+    pcr_instructions["THERMOCYCLER_BLOCK"] = pcr_instructions["THERMOCYCLER_ZONE"] // 6
+    pcr_instructions["OUTPUT_PLATE"] = pcr_instructions["THERMOCYCLER_BLOCK"].apply(
+        lambda block_id: f"pcr_plate_{block_id+1}"
     )
-    pcr_instructions["OUTPUT_PLATE"] = pcr_instructions[
-        "THERMOCYCLER_BLOCK"
-    ].apply(lambda block_id: f"pcr_plate_{block_id+1}")
 
     pcr_instructions["OUTPUT_WELL"] = ""
     for block in pcr_instructions["THERMOCYCLER_BLOCK"].unique():
@@ -412,9 +389,7 @@ def distribute_pcr(
         )
     )
     thermocycler["BLOCK ZONE"] = thermocycler["BLOCK ZONE"] % 6
-    thermocycler["PLATE_EXTENSION_TIME"] = thermocycler[
-        "PLATE_LONGEST_PCR"
-    ].apply(
+    thermocycler["PLATE_EXTENSION_TIME"] = thermocycler["PLATE_LONGEST_PCR"].apply(
         lambda pcr_length: timedelta(seconds=int((pcr_length / 1000) * 30))
     )
     return (pcr_instructions, thermocycler)

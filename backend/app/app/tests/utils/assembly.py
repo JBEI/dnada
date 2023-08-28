@@ -24,14 +24,10 @@ def create_random_assembly(
         design = create_random_design(db, owner_id=owner_id)
         design_id = design.id
     if part_id is None:
-        part = create_random_part(
-            db, owner_id=owner_id, design_id=design_id
-        )
+        part = create_random_part(db, owner_id=owner_id, design_id=design_id)
         part_id = part.id
     if construct_id is None:
-        construct = create_random_construct(
-            db, owner_id=owner_id, design_id=design_id
-        )
+        construct = create_random_construct(db, owner_id=owner_id, design_id=design_id)
         construct_id = construct.id
     j5_assembly_id = random_integer()
     name = random_lower_string()

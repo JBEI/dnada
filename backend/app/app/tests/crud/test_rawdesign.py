@@ -36,18 +36,14 @@ def test_get_rawdesign(db: Session) -> None:
     stored_rawdesign = crud.rawdesign.get(db=db, id=rawdesign.id)
     assert stored_rawdesign is not None
     assert rawdesign.id == stored_rawdesign.id
-    assert jsonable_encoder(rawdesign) == jsonable_encoder(
-        stored_rawdesign
-    )
+    assert jsonable_encoder(rawdesign) == jsonable_encoder(stored_rawdesign)
 
 
 def test_update_rawdesign(db: Session) -> None:
     rawdesign = create_random_rawdesign(db)
     name2 = random_lower_string()
     rawdesign_update = schemas.RawDesignUpdate(name=name2)
-    rawdesign2 = crud.rawdesign.update(
-        db=db, db_obj=rawdesign, obj_in=rawdesign_update
-    )
+    rawdesign2 = crud.rawdesign.update(db=db, db_obj=rawdesign, obj_in=rawdesign_update)
     assert rawdesign2.name == name2
     assert rawdesign.id == rawdesign2.id
     assert rawdesign.design_id == rawdesign2.design.id

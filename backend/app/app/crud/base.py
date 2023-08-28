@@ -1,5 +1,4 @@
-from typing import (Any, Dict, Generic, List, Optional, Tuple, Type,
-                    TypeVar, Union)
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 from fastapi.encoders import jsonable_encoder
 from pandas import DataFrame, read_json
@@ -11,6 +10,8 @@ from app.db.base_class import Base
 from app.models.design import Design
 from app.models.experiment import Experiment
 from app.models.part import Part
+from app.models.run import Run
+from app.models.workflow import Workflow
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -62,9 +63,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db_objs = db.query(self.model).filter_by(**obj_in_data)
         return db_objs.one_or_none()
 
-    def create(
-        self, db: Session, *, obj_in: CreateSchemaType
-    ) -> ModelType:
+    def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data)  # type: ignore
         db.add(db_obj)
@@ -119,9 +118,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.commit()
         return obj
 
-    def bulk_remove(
-        self, db: Session, *, ids: List[int]
-    ) -> List[ModelType]:
+    def bulk_remove(self, db: Session, *, ids: List[int]) -> List[ModelType]:
         objs = []
         for id in ids:
             obj = db.query(self.model).get(id)
@@ -169,9 +166,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return clean
 
 
-class CRUDBaseOwner(
-    CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBaseOwner(CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner present"""
 
@@ -210,9 +205,7 @@ class CRUDBaseOwner(
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
         obj_in_data = self._exclude_unset(jsonable_encoder(obj_in))
-        db_objs = db.query(self.model).filter_by(
-            owner_id=owner_id, **obj_in_data
-        )
+        db_objs = db.query(self.model).filter_by(owner_id=owner_id, **obj_in_data)
         return db_objs.all()
 
     def find_and_bulk_remove(
@@ -222,9 +215,7 @@ class CRUDBaseOwner(
         owner_id: int,
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
-        objs: List[ModelType] = self.find(
-            db=db, obj_in=obj_in, owner_id=owner_id
-        )
+        objs: List[ModelType] = self.find(db=db, obj_in=obj_in, owner_id=owner_id)
         objs = self.bulk_remove(db=db, ids=[obj.id for obj in objs])
         return objs
 
@@ -291,9 +282,7 @@ class CRUDBaseOwner(
         return (db_obj, created)
 
 
-class CRUDBaseExperiment(
-    CRUDBaseOwner[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBaseExperiment(CRUDBaseOwner[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner and Experiment present"""
 
@@ -337,9 +326,7 @@ class CRUDBaseExperiment(
         if owner_id is not None:
             baseQuery = baseQuery.filter(self.model.owner_id == owner_id)
         if experiment_id is not None:
-            baseQuery = baseQuery.filter(
-                self.model.experiment_id == experiment_id
-            )
+            baseQuery = baseQuery.filter(self.model.experiment_id == experiment_id)
         return baseQuery.offset(skip).limit(limit).all()
 
     def find(
@@ -377,9 +364,7 @@ class CRUDBaseExperiment(
         experiment_id: int,
     ) -> Tuple[ModelType, bool]:
         created: bool = False  # boolean specifying whether new obj created
-        db_objs = self.find(
-            db=db, experiment_id=experiment_id, obj_in=obj_in
-        )
+        db_objs = self.find(db=db, experiment_id=experiment_id, obj_in=obj_in)
         if len(db_objs) == 0:
             db_obj = self.create(
                 db=db,
@@ -403,9 +388,7 @@ class CRUDBaseExperiment(
         return (db_obj, created)
 
 
-class CRUDBaseDesign(
-    CRUDBaseExperiment[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBaseDesign(CRUDBaseExperiment[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner, Experiment, and Design present"""
 
@@ -418,9 +401,7 @@ class CRUDBaseDesign(
         design_id: int,
     ) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self.model(
-            **obj_in_data, owner_id=owner_id, design_id=design_id
-        )
+        db_obj = self.model(**obj_in_data, owner_id=owner_id, design_id=design_id)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
@@ -457,9 +438,7 @@ class CRUDBaseDesign(
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
         obj_in_data = self._exclude_unset(jsonable_encoder(obj_in))
-        db_objs = db.query(self.model).filter_by(
-            design_id=design_id, **obj_in_data
-        )
+        db_objs = db.query(self.model).filter_by(design_id=design_id, **obj_in_data)
         return db_objs.all()
 
     def find_and_bulk_remove(
@@ -469,9 +448,7 @@ class CRUDBaseDesign(
         design_id: int,
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
-        objs: List[ModelType] = self.find(
-            db=db, obj_in=obj_in, design_id=design_id
-        )
+        objs: List[ModelType] = self.find(db=db, obj_in=obj_in, design_id=design_id)
         objs = self.bulk_remove(db=db, ids=[obj.id for obj in objs])
         return objs
 
@@ -508,9 +485,7 @@ class CRUDBaseDesign(
         return (db_obj, created)
 
 
-class CRUDBasePart(
-    CRUDBaseDesign[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBasePart(CRUDBaseDesign[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner, Experiment, Design, and Part present"""
 
@@ -523,9 +498,7 @@ class CRUDBasePart(
         part_id: int,
     ) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self.model(
-            **obj_in_data, owner_id=owner_id, part_id=part_id
-        )
+        db_obj = self.model(**obj_in_data, owner_id=owner_id, part_id=part_id)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
@@ -553,11 +526,7 @@ class CRUDBasePart(
                 .filter(Experiment.id == experiment_id)
             )
         if design_id is not None:
-            baseQuery = (
-                baseQuery.join(Part)
-                .join(Design)
-                .filter(Design.id == design_id)
-            )
+            baseQuery = baseQuery.join(Part).join(Design).filter(Design.id == design_id)
         if part_id is not None:
             baseQuery = baseQuery.filter(self.model.part_id == part_id)
         return baseQuery.offset(skip).limit(limit).all()
@@ -570,9 +539,7 @@ class CRUDBasePart(
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
         obj_in_data = self._exclude_unset(jsonable_encoder(obj_in))
-        db_objs = db.query(self.model).filter_by(
-            part_id=part_id, **obj_in_data
-        )
+        db_objs = db.query(self.model).filter_by(part_id=part_id, **obj_in_data)
         return db_objs.all()
 
     def find_and_bulk_remove(
@@ -582,9 +549,7 @@ class CRUDBasePart(
         part_id: int,
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
-        objs: List[ModelType] = self.find(
-            db=db, obj_in=obj_in, part_id=part_id
-        )
+        objs: List[ModelType] = self.find(db=db, obj_in=obj_in, part_id=part_id)
         objs = self.bulk_remove(db=db, ids=[obj.id for obj in objs])
         return objs
 
@@ -621,9 +586,7 @@ class CRUDBasePart(
         return (db_obj, created)
 
 
-class CRUDBaseWorkflow(
-    CRUDBaseDesign[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBaseWorkflow(CRUDBaseDesign[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner, Experiment, Design, and Workflow present"""
 
@@ -636,9 +599,7 @@ class CRUDBaseWorkflow(
         workflow_id: int,
     ) -> ModelType:
         obj_in_data = jsonable_encoder(obj_in)
-        db_obj = self.model(
-            **obj_in_data, owner_id=owner_id, workflow_id=workflow_id
-        )
+        db_obj = self.model(**obj_in_data, owner_id=owner_id, workflow_id=workflow_id)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
@@ -667,14 +628,10 @@ class CRUDBaseWorkflow(
             )
         if design_id is not None:
             baseQuery = (
-                baseQuery.join(Workflow)
-                .join(Design)
-                .filter(Design.id == design_id)
+                baseQuery.join(Workflow).join(Design).filter(Design.id == design_id)
             )
         if workflow_id is not None:
-            baseQuery = baseQuery.filter(
-                self.model.workflow_id == workflow_id
-            )
+            baseQuery = baseQuery.filter(self.model.workflow_id == workflow_id)
         return baseQuery.offset(skip).limit(limit).all()
 
     def find(
@@ -685,9 +642,7 @@ class CRUDBaseWorkflow(
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
         obj_in_data = self._exclude_unset(jsonable_encoder(obj_in))
-        db_objs = db.query(self.model).filter_by(
-            workflow_id=workflow_id, **obj_in_data
-        )
+        db_objs = db.query(self.model).filter_by(workflow_id=workflow_id, **obj_in_data)
         return db_objs.all()
 
     def find_and_bulk_remove(
@@ -697,9 +652,7 @@ class CRUDBaseWorkflow(
         workflow_id: int,
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
-        objs: List[ModelType] = self.find(
-            db=db, obj_in=obj_in, workflow_id=workflow_id
-        )
+        objs: List[ModelType] = self.find(db=db, obj_in=obj_in, workflow_id=workflow_id)
         objs = self.bulk_remove(db=db, ids=[obj.id for obj in objs])
         return objs
 
@@ -783,14 +736,10 @@ class CRUDBaseInstruction(
             )
         if design_id is not None:
             baseQuery = (
-                baseQuery.join(Workflow)
-                .join(Design)
-                .filter(Design.id == design_id)
+                baseQuery.join(Workflow).join(Design).filter(Design.id == design_id)
             )
         if workflow_id is not None:
-            baseQuery = baseQuery.filter(
-                self.model.workflow_id == workflow_id
-            )
+            baseQuery = baseQuery.filter(self.model.workflow_id == workflow_id)
         if instruction_id is not None:
             pass
         return baseQuery.offset(skip).limit(limit).all()
@@ -830,9 +779,7 @@ class CRUDBaseInstruction(
         instruction_id: int,
     ) -> Tuple[ModelType, bool]:
         created: bool = False  # boolean specifying whether new obj created
-        db_objs = self.find(
-            db=db, instruction_id=instruction_id, obj_in=obj_in
-        )
+        db_objs = self.find(db=db, instruction_id=instruction_id, obj_in=obj_in)
         if len(db_objs) == 0:
             db_obj = self.create(
                 db=db,
@@ -856,9 +803,7 @@ class CRUDBaseInstruction(
         return (db_obj, created)
 
 
-class CRUDBaseWell(
-    CRUDBaseWorkflow[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBaseWell(CRUDBaseWorkflow[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner, Experiment, Design, Plate, and some
     type of content present, e.g. Oligo, Digest, PCR"""
@@ -925,9 +870,7 @@ class CRUDBaseWell(
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
         obj_in_data = self._exclude_unset(jsonable_encoder(obj_in))
-        db_objs = db.query(self.model).filter_by(
-            plate_id=plate_id, **obj_in_data
-        )
+        db_objs = db.query(self.model).filter_by(plate_id=plate_id, **obj_in_data)
         return db_objs.all()
 
     def find_and_bulk_remove(
@@ -937,9 +880,7 @@ class CRUDBaseWell(
         plate_id: int,
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
-        objs: List[ModelType] = self.find(
-            db=db, obj_in=obj_in, plate_id=plate_id
-        )
+        objs: List[ModelType] = self.find(db=db, obj_in=obj_in, plate_id=plate_id)
         objs = self.bulk_remove(db=db, ids=[obj.id for obj in objs])
         return objs
 
@@ -978,9 +919,7 @@ class CRUDBaseWell(
         return (db_obj, created)
 
 
-class CRUDBaseResult(
-    CRUDBaseWorkflow[ModelType, CreateSchemaType, UpdateSchemaType]
-):
+class CRUDBaseResult(CRUDBaseWorkflow[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     """CRUDBase with an Owner, Experiment, Design, Run, and some
     type of sample present, e.g. PCR"""
@@ -1050,9 +989,7 @@ class CRUDBaseResult(
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
         obj_in_data = self._exclude_unset(jsonable_encoder(obj_in))
-        db_objs = db.query(self.model).filter_by(
-            run_id=run_id, **obj_in_data
-        )
+        db_objs = db.query(self.model).filter_by(run_id=run_id, **obj_in_data)
         return db_objs.all()
 
     def find_and_bulk_remove(
@@ -1062,9 +999,7 @@ class CRUDBaseResult(
         run_id: int,
         obj_in: Union[CreateSchemaType, UpdateSchemaType, Dict[str, Any]],
     ) -> List[ModelType]:
-        objs: List[ModelType] = self.find(
-            db=db, obj_in=obj_in, run_id=run_id
-        )
+        objs: List[ModelType] = self.find(db=db, obj_in=obj_in, run_id=run_id)
         objs = self.bulk_remove(db=db, ids=[obj.id for obj in objs])
         return objs
 

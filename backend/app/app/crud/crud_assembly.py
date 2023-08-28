@@ -9,9 +9,7 @@ from app.models.part import Part
 from app.schemas.assembly import AssemblyCreate, AssemblyUpdate
 
 
-class CRUDAssembly(
-    CRUDBaseDesign[Assembly, AssemblyCreate, AssemblyUpdate]
-):
+class CRUDAssembly(CRUDBaseDesign[Assembly, AssemblyCreate, AssemblyUpdate]):
 
     """CRUD Methods for Assemblys"""
 
