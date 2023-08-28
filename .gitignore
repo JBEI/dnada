@@ -4,3 +4,5 @@ docker-stack.yml
 .env.production
 **/.DS_STORE
 .env
+build
+dist
