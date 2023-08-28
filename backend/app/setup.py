@@ -1,18 +1,28 @@
 from setuptools import setup, find_packages
 import os
+import io
+
+DESCRIPTION = (
+    "An application for creating customized "
+    "synthetic biology automation instructions"
+)
+here = os.path.abspath(os.path.dirname(__file__))
+try:
+    with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
+        long_description = "\n" + f.read()
+except FileNotFoundError:
+    long_description = DESCRIPTION
 
 setup(
     name="dnada",
-    version="0.1",
+    version="0.1.2",
     maintainer="Alberto Nava",
     maintainer_email="alberto_nava@berkeley.edu",
-    description=(
-        "An application for creating customized "
-        "synthetic biology automation instructions"
-    ),
+    description=DESCRIPTION,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     url="https://github.com/JBEI/dnada",
-    packages=find_packages(where=os.path.join("backend", "app", "app")),
-    package_dir={"": os.path.join("backend", "app", "app")},
+    packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
