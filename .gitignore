@@ -6,3 +6,4 @@ docker-stack.yml
 .env
 build
 dist
+dnada.egg-info
