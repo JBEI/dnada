@@ -26,6 +26,7 @@ from app.core.workflow_readme import workflow_readme
 from app.core.echo import create_echo_instructions
 from app.core import j5
 from app.core import autoprotocols
+from app.core import picking
 
 warnings.simplefilter("ignore", BiopythonWarning)
 
@@ -173,13 +174,11 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         method="biomek",
         assemblyColumns=("src_plate", "src_well"),
     )
-    print(
-        autoprotocols.perform_transformation(
-            plating_instructions=plating_instructions_biomek
-        )
+    picking_results_worksheet: DataFrame[
+        schemas.PickingResultsSchema
+    ] = picking.create_picking_instructions(
+        plating_instructions=plating_instructions_biomek, n_colonies_per_construct=3
     )
-    raise ValueError("ASDFASDFASDFASDFASDF")
-
     registry_form, registry_sequences = create_registry_submission_form(
         construct_worksheet=construct_df,
     )
@@ -312,6 +311,10 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
     }
     results["Step_14-Colony_Picking"] = {
         "README.md": workflow_readme(14),
+        "picking_worksheet.csv": picking_results_worksheet.to_csv(index=False),
+        "perform_picking.json": autoprotocols.perform_colony_picking(
+            picking_instructions=picking_results_worksheet
+        ),
     }
     results["Step_15-Request_NGS"] = {
         "README.md": workflow_readme(15),

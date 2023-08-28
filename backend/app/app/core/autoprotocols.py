@@ -30,6 +30,24 @@ class CustomProtocol(Protocol):  # type: ignore
         self.instructions.append(instruction)
         return self
 
+    def pick(self, colonies: list[dict[str, t.Any]]) -> "Protocol":
+        """
+        Add a colony picking instruction to the protocol.
+
+        Parameters
+        ----------
+        colonies: List[dict]
+            List of dictionaries describing the colonies to pick.
+
+        Returns
+        -------
+        self
+            The protocol instance.
+        """
+        instruction = {"op": "pickcolony", "colonies": colonies}
+        self.instructions.append(instruction)
+        return self
+
 
 agar_qplate = ContainerType(
     name="48-well Agar Plate",
@@ -1038,6 +1056,166 @@ def perform_transformation(
             ref=agar_plates[agar_plate],
             where="warm_37",
             duration="16:hour",
+        )
+
+    return json.dumps(p.as_dict(), indent=2)
+
+
+def perform_colony_picking(
+    picking_instructions: DataFrame[schemas.PickingResultsSchema],
+) -> str:
+    """Create autoprotocol for picking E. coli colonies."""
+    p = CustomProtocol()
+    agar_plate_names: list[str] = (
+        picking_instructions["Source Barcode"].unique().tolist()
+    )
+    agar_plates: dict[str, Container] = {
+        agar_plate_name: p.ref(
+            agar_plate_name,
+            id=agar_plate_name,
+            cont_type=agar_qplate,
+            storage="cold_4",
+        )
+        for agar_plate_name in agar_plate_names
+    }
+
+    picking_plate_names: list[str] = [
+        "picking_" + name
+        for name in picking_instructions["Destination Barcode"].unique().tolist()
+    ]
+    picking_plates: dict[str, Container] = {
+        picking_plate_name: p.ref(
+            picking_plate_name,
+            id=None,
+            cont_type="96-deep",
+            storage=None,
+            discard=True,
+        )
+        for picking_plate_name in picking_plate_names
+    }
+
+    glycerol_plate_names: list[str] = (
+        picking_instructions["Destination Barcode"].unique().tolist()
+    )
+    glycerol_plates: dict[str, Container] = {
+        glycerol_plate_name: p.ref(
+            glycerol_plate_name,
+            id=None,
+            cont_type="96-pcr",
+            storage="cold_80",
+        )
+        for glycerol_plate_name in glycerol_plate_names
+    }
+
+    ngs_plate_names: list[str] = [
+        "ngs_" + name
+        for name in picking_instructions["Destination Barcode"].unique().tolist()
+    ]
+    ngs_plates: dict[str, Container] = {
+        ngs_plate_name: p.ref(
+            ngs_plate_name,
+            id=None,
+            cont_type="96-pcr",
+            storage="cold_20",
+        )
+        for ngs_plate_name in ngs_plate_names
+    }
+
+    for plate in picking_plates:
+        p.dispense_full_plate(
+            ref=picking_plates[plate],
+            reagent="LB Miller Broth",
+            volume="800:microliter",
+        )
+
+    picking_objects: list[dict[str, t.Any]] = [
+        {
+            "source": agar_plates[source_plate].well(source_well),
+            "destination": picking_plates["picking_" + destination_plate].well(
+                destination_well
+            ),
+        }
+        for source_plate, source_well, destination_plate, destination_well in zip(
+            picking_instructions["Source Barcode"],
+            picking_instructions["Source Region"],
+            picking_instructions["Destination Barcode"],
+            picking_instructions["Destination Well"],
+        )
+    ]
+    p.pick(colonies=picking_objects)
+
+    for plate in picking_plates:
+        p.incubate(
+            ref=picking_plates[plate],
+            where="warm_37",
+            duration="16:hour",
+        )
+
+    for plate in glycerol_plates:
+        p.dispense_full_plate(
+            ref=glycerol_plates[plate], reagent=r"60% glycerol", volume="50:microliter"
+        )
+
+    for _, colony in picking_instructions.iterrows():
+        p.transfer(
+            source=picking_plates["picking_" + colony["Destination Barcode"]].well(
+                colony["Destination Well"]
+            ),
+            destination=glycerol_plates[colony["Destination Barcode"]].well(
+                colony["Destination Well"]
+            ),
+            volume="50:microliter",
+            method=Transfer(
+                blowout=False,
+                prime=False,
+                transit=False,
+                mix_before=False,
+                mix_after=False,
+            ),
+        )
+
+    for plate in glycerol_plates:
+        p.seal(glycerol_plates[plate], type="foil", mode="adhesive")
+
+    for plate in ngs_plates:
+        p.dispense_full_plate(
+            ref=ngs_plates[plate], reagent="water", volume="20:microliter"
+        )
+
+    for _, colony in picking_instructions.iterrows():
+        p.transfer(
+            source=picking_plates["picking_" + colony["Destination Barcode"]].well(
+                colony["Destination Well"]
+            ),
+            destination=ngs_plates["ngs_" + colony["Destination Barcode"]].well(
+                colony["Destination Well"]
+            ),
+            volume="20:microliter",
+            method=Transfer(
+                blowout=False,
+                prime=False,
+                transit=False,
+                mix_before=False,
+                mix_after=False,
+            ),
+        )
+
+    for plate in ngs_plates:
+        p.seal(ref=ngs_plates[plate], type="foil", mode="adhesive")
+        p.thermocycle(
+            ref=ngs_plates[plate],
+            groups=[
+                {
+                    "cycles": 1,
+                    "steps": [{"temperature": "98:celsius", "duration": "10:minute"}],
+                },
+                {
+                    "cycles": 1,
+                    "steps": [{"temperature": "10:celsius", "duration": "30:second"}],
+                },
+            ],
+            volume="40:microliter",
+            lid_temperature="105:celsius",
         )
 
     return json.dumps(p.as_dict(), indent=2)

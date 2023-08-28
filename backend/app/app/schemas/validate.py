@@ -275,6 +275,17 @@ class PlatingInstructionsSchema(ConstructWorksheetSchema):
     QWELL: Series[str] = pa.Field()
 
 
+class PickingResultsSchema(pa.DataFrameModel):
+    source_barcode: Series[str] = pa.Field(alias="Source Barcode")
+    source_region: Series[str] = pa.Field(alias="Source Region")
+    destination_barcode: Series[str] = pa.Field(alias="Destination Barcode")
+    destination_well: Series[str] = pa.Field(alias="Destination Well")
+
+    class Config:
+        strict = True
+        coerce = True
+
+
 class MasterJ5Digests(pa.DataFrameModel):
     ID_Number: Series[int] = pa.Field(alias="ID Number", ge=0, unique=True)
     Sequence_Source: Series[str] = pa.Field(alias="Sequence Source", unique=True)
