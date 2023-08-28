@@ -173,6 +173,13 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         method="biomek",
         assemblyColumns=("src_plate", "src_well"),
     )
+    print(
+        autoprotocols.perform_transformation(
+            plating_instructions=plating_instructions_biomek
+        )
+    )
+    raise ValueError("ASDFASDFASDFASDFASDF")
+
     registry_form, registry_sequences = create_registry_submission_form(
         construct_worksheet=construct_df,
     )
@@ -287,6 +294,9 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         "equimolar_assembly_echo_instructions.csv": (
             equimolar_assembly_echo_instructions.to_csv(index=False)
         ),
+        "perform_assembly.json": autoprotocols.perform_assembly(
+            assembly_echo_instructions=assembly_echo_instructions_df
+        ),
     }
     results["Step_12-Yeast_Plasmid_Prep"] = {
         "README.md": workflow_readme(12),
@@ -295,6 +305,9 @@ def j5_to_echo(j5_design: j5.J5Design) -> Tuple[dict[Any, Any], io.BytesIO]:
         "README.md": workflow_readme(13),
         "plating_instructions_biomek.csv": (
             plating_instructions_biomek.to_csv(index=False)
+        ),
+        "perform_transformation.json": autoprotocols.perform_transformation(
+            plating_instructions=plating_instructions_biomek
         ),
     }
     results["Step_14-Colony_Picking"] = {

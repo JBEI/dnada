@@ -4,6 +4,7 @@ from autoprotocol.protocol import Protocol, Container
 from autoprotocol.types import protocol
 from autoprotocol.liquid_handle import Transfer
 from autoprotocol.builders import DispenseBuilders
+from autoprotocol.container_type import ContainerType
 from pandera.typing import DataFrame
 
 from app import schemas
@@ -28,6 +29,32 @@ class CustomProtocol(Protocol):  # type: ignore
         instruction = {"op": "genesynthesize", "genes": genes}
         self.instructions.append(instruction)
         return self
+
+
+agar_qplate = ContainerType(
+    name="48-well Agar Plate",
+    well_count=48,
+    well_depth_mm=None,
+    well_volume_ul="300:microliter",
+    well_coating=None,
+    sterile=True,
+    is_tube=False,
+    cover_types=["universal"],
+    seal_types=None,
+    capabilities=[
+        "liquid_handle",
+        "incubate",
+        "cover",
+        "dispense",
+        "liquid_handle",
+        "provision",
+    ],
+    shortname="48-agar-plate",
+    col_count=6,
+    dead_volume_ul="1:microliter",
+    safe_min_volume_ul="5:microliter",
+    true_max_vol_ul="500:microliter",
+)
 
 
 def order_genes(synths_order_form_384: DataFrame[schemas.SynthsPlateSchema]) -> str:
@@ -731,6 +758,7 @@ def perform_cleanups(
 def organize_and_quantify_fragments(
     quant_worksheet: DataFrame[schemas.PartsWorksheetSchema],
 ) -> str:
+    """Create autoprotocol for organizing and quantifying fragments"""
     p = Protocol()
     part_plate_names: list[str] = quant_worksheet["PART_PLATE"].unique().tolist()
     part_plates: dict[str, Container] = {
@@ -813,5 +841,203 @@ def organize_and_quantify_fragments(
 
     for plate in part_plates:
         p.seal(part_plates[plate], type="foil", mode="adhesive")
+
+    return json.dumps(p.as_dict(), indent=2)
+
+
+def perform_assembly(
+    assembly_echo_instructions: DataFrame[schemas.EchoInstructionsSchema],
+) -> str:
+    """Create autoprotocol for performing equivolume DNA assembly"""
+    # TODO: add yeast and golden gate assembly to autoprotocol
+
+    p = Protocol()
+    part_plate_names: list[str] = (
+        assembly_echo_instructions["Source Plate Name"].unique().tolist()
+    )
+    part_plates: dict[str, Container] = {
+        part_plate_name: p.ref(
+            part_plate_name, id=part_plate_name, cont_type="384-echo", storage="cold_20"
+        )
+        for part_plate_name in part_plate_names
+    }
+
+    assembly_plate_names: list[str] = (
+        assembly_echo_instructions["Destination Plate Name"].unique().tolist()
+    )
+    assembly_plates: dict[str, Container] = {
+        assembly_plate_name: p.ref(
+            assembly_plate_name, id=None, cont_type="96-pcr", storage="cold_20"
+        )
+        for assembly_plate_name in assembly_plate_names
+    }
+
+    for plate in part_plates:
+        p.unseal(part_plates[plate])
+
+    for _, instruction in assembly_echo_instructions.iterrows():
+        p.acoustic_transfer(
+            source=part_plates[instruction["Source Plate Name"]].well(
+                instruction["Source Well"]
+            ),
+            dest=assembly_plates[instruction["Destination Plate Name"]].well(
+                instruction["Destination Well"]
+            ),
+            volume=f'{instruction["Transfer Volume"]}:nanoliter',
+            droplet_size="2.5:nanoliter",
+        )
+
+    for plate in part_plates:
+        p.seal(part_plates[plate])
+
+    for plate in assembly_plates:
+        p.dispense_full_plate(
+            ref=assembly_plates[plate],
+            reagent="Gibson Assembly Master Mix",
+            volume="5:microliter",
+        )
+
+    for plate in assembly_plates:
+        p.seal(assembly_plates[plate], type="foil", mode="adhesive")
+        p.thermocycle(
+            ref=assembly_plates[plate],
+            groups=[
+                {
+                    "cycles": 1,
+                    "steps": [{"temperature": "50:celsius", "duration": "60:minute"}],
+                }
+            ],
+        )
+
+    return json.dumps(p.as_dict(), indent=2)
+
+
+def perform_transformation(
+    plating_instructions: DataFrame[schemas.PlatingInstructionsSchema],
+) -> str:
+    """Create autoprotocol for performing E. coli transformations"""
+    p = Protocol()
+    assembly_plate_names: list[str] = (
+        plating_instructions["src_plate"].unique().tolist()
+    )
+    assembly_plates: dict[str, Container] = {
+        assembly_plate_name: p.ref(
+            assembly_plate_name,
+            id=assembly_plate_name,
+            cont_type="96-pcr",
+            storage="cold_20",
+        )
+        for assembly_plate_name in assembly_plate_names
+    }
+
+    transformation_plate_names: list[str] = [
+        "transformation_" + plate for plate in assembly_plate_names
+    ]
+    transformation_plates: dict[str, Container] = {
+        transformation_plate_name: p.ref(
+            transformation_plate_name,
+            id=None,
+            cont_type="96-pcr",
+            storage=None,
+            discard=True,
+        )
+        for transformation_plate_name in transformation_plate_names
+    }
+
+    agar_plate_names: list[str] = plating_instructions["QPLATE"].unique().tolist()
+    agar_plates: dict[str, Container] = {
+        agar_plate_name: p.ref(
+            agar_plate_name,
+            id=None,
+            cont_type=agar_qplate,
+            storage="cold_4",
+        )
+        for agar_plate_name in agar_plate_names
+    }
+
+    for plate in assembly_plates:
+        p.unseal(assembly_plates[plate])
+
+    for plate in transformation_plates:
+        p.dispense_full_plate(
+            ref=transformation_plates[plate],
+            reagent="Chemically Competent E. coli",
+            volume="10:microliter",
+        )
+
+    for _, transformation in plating_instructions.iterrows():
+        p.transfer(
+            source=assembly_plates[transformation["src_plate"]].well(
+                transformation["src_well"]
+            ),
+            destination=transformation_plates[
+                "transformation_" + transformation["src_plate"]
+            ].well(transformation["src_well"]),
+            volume="5:microliter",
+            method=Transfer(
+                blowout=False,
+                prime=False,
+                transit=False,
+                mix_before=False,
+                mix_after=False,
+            ),
+        )
+
+    for plate in transformation_plates:
+        p.seal(transformation_plates[plate], type="foil", mode="adhesive")
+        p.incubate(
+            ref=transformation_plates[plate],
+            where="cold_4",
+            duration="10:minute",
+        )
+        p.thermocycle(
+            ref=transformation_plates[plate],
+            groups=[
+                {
+                    "cycles": 1,
+                    "steps": [{"temperature": "42:celsius", "duration": "30:second"}],
+                }
+            ],
+        )
+        p.incubate(
+            ref=transformation_plates[plate],
+            where="cold_4",
+            duration="5:minute",
+        )
+        p.unseal(transformation_plates[plate])
+        p.dispense_full_plate(
+            ref=transformation_plates[plate],
+            reagent="SOC Media",
+            volume="180:microliter",
+        )
+        p.seal(transformation_plates[plate], type="breathable", mode="adhesive")
+        p.incubate(
+            ref=transformation_plates[plate],
+            where="warm_37",
+            duration="1:hour",
+            shaking=True,
+        )
+        p.unseal(transformation_plates[plate])
+
+    for _, transformation in plating_instructions.iterrows():
+        p.spread(
+            source=transformation_plates[
+                "transformation_" + transformation["src_plate"]
+            ].well(transformation["src_well"]),
+            dest=agar_plates[transformation["QPLATE"]].well(transformation["QWELL"]),
+            volume="150:microliter",
+        )
+
+    for agar_plate in agar_plates:
+        p.incubate(
+            ref=agar_plates[agar_plate],
+            where="ambient",
+            duration="1:hour",
+        )
+        p.incubate(
+            ref=agar_plates[agar_plate],
+            where="warm_37",
+            duration="16:hour",
+        )
 
     return json.dumps(p.as_dict(), indent=2)
